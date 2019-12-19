@@ -1,3 +1,9 @@
+// -------------------------------------------------------------------------- //
+// Copyright (c) 2019, Jairus Martin.                                         //
+// Distributed under the terms of the MIT License.                            //
+// The full license is in the file LICENSE, distributed with this software.   //
+// -------------------------------------------------------------------------- //
+
 // Some of this is ported from cpython's datetime module
 const std = @import("std");
 const time = std.time;
