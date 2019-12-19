@@ -10,9 +10,6 @@ before_install:
     # Make sure zig runs
     - zig --help
 
-    # Make sure this repo builds
-    - zig build install
-
 script:
     # Run tests
     - zig test src/datetime.zig
