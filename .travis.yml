@@ -1,0 +1,18 @@
+language: cpp
+dist: bionic
+services:
+    - docker
+
+before_install:
+    # Install zig
+    - sudo snap install zig --classic --edge
+
+    # Make sure zig runs
+    - zig --help
+
+    # Make sure this repo builds
+    - zig build install
+
+script:
+    # Run tests
+    - zig test src/datetime.zig
