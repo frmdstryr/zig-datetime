@@ -13,3 +13,7 @@ before_install:
 script:
     # Run tests
     - zig test src/datetime.zig
+
+after_success:
+    - docker run --rm --security-opt seccomp=unconfined -v $(pwd):$(pwd) -w $(pwd) kcov/kcov kcov kcov-out ./zig-cache/o/*/test
+    - bash <(curl -s https://codecov.io/bash) -s kcov-out
