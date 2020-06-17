@@ -1111,20 +1111,14 @@ pub const Datetime = struct {
 
     // Formats a timestamp in the format used by HTTP.
     // eg "Tue, 15 Nov 1994 08:12:31 GMT"
-    pub fn formatHttpFromTimestamp(allocator: *std.mem.Allocator, timestamp: u64) ![]const u8 {
+    pub fn formatHttpFromTimestamp(allocator: *std.mem.Allocator, timestamp: i64) ![]const u8 {
         return Datetime.fromTimestamp(timestamp).formatHttp(allocator);
     }
 
     // From time in nanoseconds
-    pub fn formatHttpFromModifiedDate(allocator: *std.mem.Allocator, mtime: i64) ![]const u8 {
-        comptime const ns_per_ms = time.ns_per_s/time.ms_per_s;
-        const ts = @divFloor(mtime, ns_per_ms);
-        if (ts < 0) {
-            var dt = Datetime.fromTimestamp(0);
-            return dt.shiftSeconds(ts).formatHttp(allocator);
-        } else {
-            return Datetime.formatHttpFromTimestamp(allocator, @intCast(u64, ts));
-        }
+    pub fn formatHttpFromModifiedDate(allocator: *std.mem.Allocator, mtime: i128) ![]const u8 {
+        const ts = @intCast(i64, @divFloor(mtime, time.ns_per_ms));
+        return Datetime.formatHttpFromTimestamp(allocator, ts);
     }
 
 };
@@ -1233,6 +1227,15 @@ test "datetime-subtract" {
      b = try Datetime.create(2019, 12, 2, 11, 0, 0, 466545, null);
      delta = a.sub(b);
      testing.expectEqual(delta.totalSeconds(), 13 + 51* time.s_per_min);
+}
+
+test "file-modified-date" {
+    const allocator = std.heap.page_allocator;
+    var f = try std.fs.cwd().openFile("./src/datetime.zig", .{});
+    var stat = try f.stat();
+    var str = try Datetime.formatHttpFromModifiedDate(allocator, stat.mtime);
+    defer allocator.free(str);
+    std.debug.warn("Modtime: {}\n", .{str});
 }
 
 test "readme-example" {
