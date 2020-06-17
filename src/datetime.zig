@@ -758,6 +758,11 @@ test "time-create" {
     testing.expect(t.minute == 36);
     testing.expect(t.second == 26);
     testing.expect(t.nanosecond == 928000000);
+
+    testing.expectError(error.InvalidTime, Time.create(25, 1, 1, 0, null));
+    testing.expectError(error.InvalidTime, Time.create(1, 60, 1, 0, null));
+    testing.expectError(error.InvalidTime, Time.create(12, 30, 281, 0, null));
+    testing.expectError(error.InvalidTime, Time.create(12, 30, 28, 1000000000, null));
 }
 
 test "time-now" {
