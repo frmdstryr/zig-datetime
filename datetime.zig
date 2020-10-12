@@ -1236,7 +1236,7 @@ test "datetime-subtract" {
 
 test "file-modified-date" {
     const allocator = std.heap.page_allocator;
-    var f = try std.fs.cwd().openFile("./src/datetime.zig", .{});
+    var f = try std.fs.cwd().openFile("./datetime.zig", .{});
     var stat = try f.stat();
     var str = try Datetime.formatHttpFromModifiedDate(allocator, stat.mtime);
     defer allocator.free(str);
