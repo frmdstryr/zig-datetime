@@ -9,7 +9,7 @@ const std = @import("std");
 const time = std.time;
 const math = std.math;
 const ascii = std.ascii;
-
+const Allocator = std.mem.Allocator;
 const Order = std.math.Order;
 
 const timezones = @import("timezones.zig");
@@ -1139,8 +1139,21 @@ pub const Datetime = struct {
 
     // Formats a timestamp in the format used by HTTP.
     // eg "Tue, 15 Nov 1994 08:12:31 GMT"
-    pub fn formatHttp(self: *Datetime, allocator: *std.mem.Allocator) ![]const u8 {
+    pub fn formatHttp(self: *Datetime, allocator: *Allocator) ![]const u8 {
         return try std.fmt.allocPrint(allocator, "{}, {} {} {} {d:0>2}:{d:0>2}:{d:0>2} {}", .{
+            self.date.weekdayName()[0..3],
+            self.date.day,
+            self.date.monthName()[0..3],
+            self.date.year,
+            self.time.hour,
+            self.time.minute,
+            self.time.second,
+            self.time.zone.name // TODO: Should be GMT
+        });
+    }
+
+    pub fn formatHttpBuf(self: *Datetime, buf: []u8) ![]const u8 {
+        return try std.fmt.bufPrint(buf, "{}, {} {} {} {d:0>2}:{d:0>2}:{d:0>2} {}", .{
             self.date.weekdayName()[0..3],
             self.date.day,
             self.date.monthName()[0..3],
@@ -1154,14 +1167,14 @@ pub const Datetime = struct {
 
     // Formats a timestamp in the format used by HTTP.
     // eg "Tue, 15 Nov 1994 08:12:31 GMT"
-    pub fn formatHttpFromTimestamp(allocator: *std.mem.Allocator, timestamp: i64) ![]const u8 {
-        return Datetime.fromTimestamp(timestamp).formatHttp(allocator);
+    pub fn formatHttpFromTimestamp(buf: []u8, timestamp: i64) ![]const u8 {
+        return Datetime.fromTimestamp(timestamp).formatHttpBuf(buf);
     }
 
     // From time in nanoseconds
-    pub fn formatHttpFromModifiedDate(allocator: *std.mem.Allocator, mtime: i128) ![]const u8 {
+    pub fn formatHttpFromModifiedDate(buf: []u8, mtime: i128) ![]const u8 {
         const ts = @intCast(i64, @divFloor(mtime, time.ns_per_ms));
-        return Datetime.formatHttpFromTimestamp(allocator, ts);
+        return Datetime.formatHttpFromTimestamp(buf, ts);
     }
 
     // ------------------------------------------------------------------------
@@ -1302,11 +1315,10 @@ test "datetime-parse-modified-since" {
 }
 
 test "file-modified-date" {
-    const allocator = std.testing.allocator;
     var f = try std.fs.cwd().openFile("datetime.zig", .{});
     var stat = try f.stat();
-    var str = try Datetime.formatHttpFromModifiedDate(allocator, stat.mtime);
-    defer allocator.free(str);
+    var buf: [32]u8 = undefined;
+    var str = try Datetime.formatHttpFromModifiedDate(&buf, stat.mtime);
     std.debug.warn("Modtime: {}\n", .{str});
 }
 
