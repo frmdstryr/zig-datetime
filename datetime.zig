@@ -12,7 +12,7 @@ const ascii = std.ascii;
 const Allocator = std.mem.Allocator;
 const Order = std.math.Order;
 
-const timezones = @import("timezones.zig");
+pub const timezones = @import("timezones.zig");
 
 const testing = std.testing;
 const assert = std.debug.assert;
