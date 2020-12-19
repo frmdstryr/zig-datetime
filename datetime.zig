@@ -441,17 +441,17 @@ pub const Date = struct {
         }
         var ord = daysBeforeYear(year);
         var days = self.dayOfYear();
-        const fromLeap = isLeapYear(self.year);
-        const toLeap = isLeapYear(year);
-        if (days == 59 and fromLeap and toLeap) {
+        const from_leap = isLeapYear(self.year);
+        const to_leap = isLeapYear(year);
+        if (days == 59 and from_leap and to_leap) {
             // No change before leap day
         } else if (days < 59) {
             // No change when jumping from leap day to leap day
-        } else if (toLeap and !fromLeap) {
+        } else if (to_leap and !from_leap) {
             // When jumping to a leap year to non-leap year
             // we have to add a leap day to the day of year
             days += 1;
-        } else if (fromLeap and !toLeap) {
+        } else if (from_leap and !to_leap) {
             // When jumping from leap year to non-leap year we have to undo
             // the leap day added to the day of yearear
             days -= 1;
@@ -1010,11 +1010,9 @@ pub const Datetime = struct {
     }
 
     pub fn cmp(self: Datetime, other: Datetime) Order {
-        var r = self.date.cmp(other.date);
+        const r = self.date.cmp(other.date);
         if (r != .eq) return r;
-        r = self.time.cmp(other.time);
-        if (r != .eq) return r;
-        return .eq;
+        return self.time.cmp(other.time);
     }
 
     pub fn gt(self: Datetime, other: Datetime) bool {
@@ -1041,7 +1039,7 @@ pub const Datetime = struct {
 
     // Return a Datetime.Delta relative to this date
     pub fn sub(self: Datetime, other: Datetime) Delta {
-        var days = @intCast(i32, self.date.toOrdinal()) - @intCast(i32, other.date.toOrdinal());
+        const days = @intCast(i32, self.date.toOrdinal()) - @intCast(i32, other.date.toOrdinal());
         var seconds = self.time.totalSeconds() - other.time.totalSeconds();
         if (self.time.zone.offset != other.time.zone.offset) {
             const mins = (self.time.zone.offset - other.time.zone.offset);
