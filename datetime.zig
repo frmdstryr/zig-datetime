@@ -921,11 +921,11 @@ pub const Datetime = struct {
             }
             var s = self.seconds;
             var ns = self.nanoseconds;
-            if (ns > time.ns_per_s) {
+            if (ns >= time.ns_per_s) {
                 const ds = @divFloor(ns, time.ns_per_s);
                 ns -= ds * time.ns_per_s;
                 s += ds;
-            } else if (ns < -time.ns_per_s) {
+            } else if (ns <= -time.ns_per_s) {
                 const ds = @divFloor(ns, -time.ns_per_s);
                 ns += ds * time.us_per_s;
                 s -= ds;
@@ -1092,7 +1092,7 @@ pub const Datetime = struct {
 
         // Rollover ns to s
         var ns = delta.nanoseconds + @intCast(i32, self.time.nanosecond);
-        if (ns > time.ns_per_s) {
+        if (ns >= time.ns_per_s) {
             s += 1;
             ns -= time.ns_per_s;
         } else if (ns < -time.ns_per_s) {
@@ -1103,7 +1103,7 @@ pub const Datetime = struct {
         const nanosecond = @intCast(u32, ns);
 
         // Rollover s to days
-        if (s > time.s_per_day) {
+        if (s >= time.s_per_day) {
             const d = @divFloor(s, time.s_per_day);
             days += @intCast(i32, d);
             s -= d * time.s_per_day;
@@ -1270,6 +1270,27 @@ test "datetime-shift" {
     testing.expect(t.date.eql(try Date.create(2016, 12, 2)));
     testing.expect(t.time.eql(dt.time));
 
+}
+
+test "datetime-shift-seconds" {
+    // Issue 1
+    const midnight_utc = try Datetime.create(2020, 12, 17, 0, 0, 0, 0, null);
+    const midnight_copenhagen = try Datetime.create(
+        2020, 12, 17, 1, 0, 0, 0, &timezones.Europe.Copenhagen);
+    testing.expect(midnight_utc.eql(midnight_copenhagen));
+
+    // Check rollover issues
+    var hour: u8 = 0;
+    while (hour < 24) : (hour += 1) {
+        var minute: u8 = 0;
+        while (minute < 60) : (minute += 1) {
+            var sec: u8 = 0;
+            while (sec < 60) : (sec += 1) {
+                const t = try Datetime.create(2020, 12, 17, hour, minute, sec, 0, null);
+                const dt = t.shiftTimezone(&timezones.Europe.Copenhagen);
+            }
+        }
+    }
 }
 
 test "datetime-compare" {
