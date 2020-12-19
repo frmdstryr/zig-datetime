@@ -441,17 +441,17 @@ pub const Date = struct {
         }
         var ord = daysBeforeYear(year);
         var days = self.dayOfYear();
-        const fromLeap = isLeapYear(self.year);
-        const toLeap = isLeapYear(year);
-        if (days == 59 and fromLeap and toLeap) {
+        const from_leap = isLeapYear(self.year);
+        const to_leap = isLeapYear(year);
+        if (days == 59 and from_leap and to_leap) {
             // No change before leap day
         } else if (days < 59) {
             // No change when jumping from leap day to leap day
-        } else if (toLeap and !fromLeap) {
+        } else if (to_leap and !from_leap) {
             // When jumping to a leap year to non-leap year
             // we have to add a leap day to the day of year
             days += 1;
-        } else if (fromLeap and !toLeap) {
+        } else if (from_leap and !to_leap) {
             // When jumping from leap year to non-leap year we have to undo
             // the leap day added to the day of yearear
             days -= 1;
@@ -921,11 +921,11 @@ pub const Datetime = struct {
             }
             var s = self.seconds;
             var ns = self.nanoseconds;
-            if (ns > time.ns_per_s) {
+            if (ns >= time.ns_per_s) {
                 const ds = @divFloor(ns, time.ns_per_s);
                 ns -= ds * time.ns_per_s;
                 s += ds;
-            } else if (ns < -time.ns_per_s) {
+            } else if (ns <= -time.ns_per_s) {
                 const ds = @divFloor(ns, -time.ns_per_s);
                 ns += ds * time.us_per_s;
                 s -= ds;
@@ -1010,11 +1010,9 @@ pub const Datetime = struct {
     }
 
     pub fn cmp(self: Datetime, other: Datetime) Order {
-        var r = self.date.cmp(other.date);
+        const r = self.date.cmp(other.date);
         if (r != .eq) return r;
-        r = self.time.cmp(other.time);
-        if (r != .eq) return r;
-        return .eq;
+        return self.time.cmp(other.time);
     }
 
     pub fn gt(self: Datetime, other: Datetime) bool {
@@ -1041,7 +1039,7 @@ pub const Datetime = struct {
 
     // Return a Datetime.Delta relative to this date
     pub fn sub(self: Datetime, other: Datetime) Delta {
-        var days = @intCast(i32, self.date.toOrdinal()) - @intCast(i32, other.date.toOrdinal());
+        const days = @intCast(i32, self.date.toOrdinal()) - @intCast(i32, other.date.toOrdinal());
         var seconds = self.time.totalSeconds() - other.time.totalSeconds();
         if (self.time.zone.offset != other.time.zone.offset) {
             const mins = (self.time.zone.offset - other.time.zone.offset);
@@ -1094,7 +1092,7 @@ pub const Datetime = struct {
 
         // Rollover ns to s
         var ns = delta.nanoseconds + @intCast(i32, self.time.nanosecond);
-        if (ns > time.ns_per_s) {
+        if (ns >= time.ns_per_s) {
             s += 1;
             ns -= time.ns_per_s;
         } else if (ns < -time.ns_per_s) {
@@ -1105,7 +1103,7 @@ pub const Datetime = struct {
         const nanosecond = @intCast(u32, ns);
 
         // Rollover s to days
-        if (s > time.s_per_day) {
+        if (s >= time.s_per_day) {
             const d = @divFloor(s, time.s_per_day);
             days += @intCast(i32, d);
             s -= d * time.s_per_day;
@@ -1272,6 +1270,27 @@ test "datetime-shift" {
     testing.expect(t.date.eql(try Date.create(2016, 12, 2)));
     testing.expect(t.time.eql(dt.time));
 
+}
+
+test "datetime-shift-seconds" {
+    // Issue 1
+    const midnight_utc = try Datetime.create(2020, 12, 17, 0, 0, 0, 0, null);
+    const midnight_copenhagen = try Datetime.create(
+        2020, 12, 17, 1, 0, 0, 0, &timezones.Europe.Copenhagen);
+    testing.expect(midnight_utc.eql(midnight_copenhagen));
+
+    // Check rollover issues
+    var hour: u8 = 0;
+    while (hour < 24) : (hour += 1) {
+        var minute: u8 = 0;
+        while (minute < 60) : (minute += 1) {
+            var sec: u8 = 0;
+            while (sec < 60) : (sec += 1) {
+                const t = try Datetime.create(2020, 12, 17, hour, minute, sec, 0, null);
+                const dt = t.shiftTimezone(&timezones.Europe.Copenhagen);
+            }
+        }
+    }
 }
 
 test "datetime-compare" {
