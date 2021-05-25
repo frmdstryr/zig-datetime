@@ -9,7 +9,7 @@ before_install:
 
 script:
     # Run tests
-    - zig test datetime.zig
+    - zig build test
 
 after_success:
     - docker run --rm --security-opt seccomp=unconfined -v $(pwd):$(pwd) -w $(pwd) kcov/kcov kcov kcov-out ./zig-cache/o/*/test
