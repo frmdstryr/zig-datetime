@@ -204,8 +204,8 @@ test "iso-first-monday" {
 
 pub const ISOCalendar = struct {
     year: u16,
-    week: u8,
-    day: u8,
+    week: u6, // Week of year 1-52
+    weekday: u3, // Day of week 1-7
 };
 
 
@@ -372,12 +372,12 @@ pub const Date = struct {
             y += 1;
             week = 0;
         }
-        assert(week >= 0);
-        assert(day >= 0);
+        assert(week >= 0 and week < 53);
+        assert(day >= 0 and day < 8);
         return ISOCalendar{
             .year=y,
-            .week=@intCast(u8, week+1),
-            .day=@intCast(u8, day+1)
+            .week=@intCast(u6, week+1),
+            .weekday=@intCast(u3, day+1)
         };
     }
 
@@ -722,7 +722,7 @@ test "date-parse-iso" {
 test "date-isocalendar" {
     const today = try Date.create(2021, 8, 12);
     try testing.expectEqual(today.isoCalendar(),
-        ISOCalendar{.year=2021, .week=32, .day=4});
+        ISOCalendar{.year=2021, .week=32, .weekday=4});
 
     // Some random dates and outputs generated with python
     const dates = [10][]const u8{
@@ -739,16 +739,16 @@ test "date-isocalendar" {
     };
 
     const expect = [10]ISOCalendar{
-        ISOCalendar{.year=2018, .week=50, .day=6},
-        ISOCalendar{.year=2019, .week=3, .day=6},
-        ISOCalendar{.year=2019, .week=42, .day=1},
-        ISOCalendar{.year=2020, .week=39, .day=6},
-        ISOCalendar{.year=2020, .week=52, .day=7},
-        ISOCalendar{.year=2021, .week=1, .day=7},
-        ISOCalendar{.year=2021, .week=37, .day=2},
-        ISOCalendar{.year=2022, .week=37, .day=1},
-        ISOCalendar{.year=2023, .week=15, .day=1},
-        ISOCalendar{.year=2024, .week=3, .day=2},
+        ISOCalendar{.year=2018, .week=50, .weekday=6},
+        ISOCalendar{.year=2019, .week=3, .weekday=6},
+        ISOCalendar{.year=2019, .week=42, .weekday=1},
+        ISOCalendar{.year=2020, .week=39, .weekday=6},
+        ISOCalendar{.year=2020, .week=52, .weekday=7},
+        ISOCalendar{.year=2021, .week=1, .weekday=7},
+        ISOCalendar{.year=2021, .week=37, .weekday=2},
+        ISOCalendar{.year=2022, .week=37, .weekday=1},
+        ISOCalendar{.year=2023, .week=15, .weekday=1},
+        ISOCalendar{.year=2024, .week=3, .weekday=2},
     };
 
     for (dates) |d, i| {
