@@ -204,7 +204,7 @@ test "iso-first-monday" {
 
 pub const ISOCalendar = struct {
     year: u16,
-    week: u6, // Week of year 1-52
+    week: u6, // Week of year 1-53
     weekday: u3, // Day of week 1-7
 };
 
@@ -354,21 +354,17 @@ pub const Date = struct {
     // weekday. First week is 1. Monday is 1, Sunday is 7.
     pub fn isoCalendar(self: Date) ISOCalendar {
         // Ported from python's isocalendar.
-        // TODO: Optimize
         var y = self.year;
         var first_monday = daysBeforeFirstMonday(y);
         const today = ymd2ord(self.year, self.month, self.day);
-        // Will never be more than +-365
-        var days_between = @intCast(i32, today - first_monday);
-        var week = @divFloor(days_between, 7);
-        var day = @mod(days_between, 7);
-        if (week < 0) {
+        if (today < first_monday) {
             y -= 1;
             first_monday = daysBeforeFirstMonday(y);
-            days_between = @intCast(i32, today - first_monday);
-            week = @divFloor(days_between, 7);
-            day = @mod(days_between, 7);
-        } else if (week > 52 and today > daysBeforeFirstMonday(y+1)) {
+        }
+        const days_between = today - first_monday;
+        var week = @divFloor(days_between, 7);
+        var day = @mod(days_between, 7);
+        if (week >= 52 and today >= daysBeforeFirstMonday(y+1)) {
             y += 1;
             week = 0;
         }
@@ -725,26 +721,43 @@ test "date-isocalendar" {
         ISOCalendar{.year=2021, .week=32, .weekday=4});
 
     // Some random dates and outputs generated with python
-    const dates = [10][]const u8{
+    const dates = [15][]const u8{
         "2018-12-15",
         "2019-01-19",
         "2019-10-14",
         "2020-09-26",
+
+        // Border cases
         "2020-12-27",
+        "2020-12-30",
+        "2020-12-31",
+
+        "2021-01-01",
+        "2021-01-03",
+        "2021-01-04",
         "2021-01-10",
+
         "2021-09-14",
         "2022-09-12",
         "2023-04-10",
         "2024-01-16",
     };
 
-    const expect = [10]ISOCalendar{
+    const expect = [15]ISOCalendar{
         ISOCalendar{.year=2018, .week=50, .weekday=6},
         ISOCalendar{.year=2019, .week=3, .weekday=6},
         ISOCalendar{.year=2019, .week=42, .weekday=1},
         ISOCalendar{.year=2020, .week=39, .weekday=6},
+
         ISOCalendar{.year=2020, .week=52, .weekday=7},
+        ISOCalendar{.year=2020, .week=53, .weekday=3},
+        ISOCalendar{.year=2020, .week=53, .weekday=4},
+
+        ISOCalendar{.year=2020, .week=53, .weekday=5},
+        ISOCalendar{.year=2020, .week=53, .weekday=7},
+        ISOCalendar{.year=2021, .week=1, .weekday=1},
         ISOCalendar{.year=2021, .week=1, .weekday=7},
+
         ISOCalendar{.year=2021, .week=37, .weekday=2},
         ISOCalendar{.year=2022, .week=37, .weekday=1},
         ISOCalendar{.year=2023, .week=15, .weekday=1},
