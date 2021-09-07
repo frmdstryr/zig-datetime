@@ -432,8 +432,13 @@ pub const Date = struct {
     // ------------------------------------------------------------------------
 
     // Return date in ISO format YYYY-MM-DD
+    const ISO_DATE_FMT = "{:0>4}-{:0>2}-{:0>2}";
     pub fn formatIso(self: Date, buf: []u8) ![]u8 {
-        return std.fmt.bufPrint(buf, "{}-{}-{}", .{ self.year, self.month, self.day });
+        return std.fmt.bufPrint(buf, ISO_DATE_FMT, .{ self.year, self.month, self.day });
+    }
+
+    pub fn writeIso(self: Date, writer: anytype) !void {
+      try std.fmt.format(writer, ISO_DATE_FMT, .{ self.year, self.month, self.day });
     }
 
     // ------------------------------------------------------------------------
@@ -714,6 +719,33 @@ test "date-parse-iso" {
         Date.parseIso("2000-1-1"));
 }
 
+test "date-format-iso" {
+  var date_strs = [_][]const u8 {
+    "0959-02-05",
+    "2018-12-15",
+  };
+
+  for (date_strs) |date_str| {
+    var d = try Date.parseIso(date_str);
+    var buf: [32]u8 = undefined;
+    try testing.expectEqualStrings(date_str, try d.formatIso(buf[0..]));
+  }
+}
+
+test "date-write-iso" {
+  var date_strs = [_][]const u8 {
+    "0959-02-05",
+    "2018-12-15",
+  };
+
+  for (date_strs) |date_str| {
+    var buf: [32]u8 = undefined;
+    var stream = std.io.fixedBufferStream(buf[0..]);
+    var d = try Date.parseIso(date_str);
+    try d.writeIso(stream.writer());
+    try testing.expectEqualStrings(date_str, stream.getWritten());
+  }
+}
 
 test "date-isocalendar" {
     const today = try Date.create(2021, 8, 12);
