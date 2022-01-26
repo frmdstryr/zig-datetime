@@ -1503,15 +1503,15 @@ test "file-modified-date" {
 
 test "readme-example" {
     const allocator = std.testing.allocator;
-    var date = try Date.create(2019, 12, 25);
-    var next_year = date.shiftDays(7);
+    const date = try Date.create(2019, 12, 25);
+    const next_year = date.shiftDays(7);
     assert(next_year.year == 2020);
     assert(next_year.month == 1);
     assert(next_year.day == 1);
 
     // In UTC
-    var now = Datetime.now();
-    var now_str = try now.formatHttp(allocator);
+    const now = Datetime.now();
+    const now_str = try now.formatHttp(allocator);
     defer allocator.free(now_str);
     std.log.warn("The time is now: {s}\n", .{now_str});
     // The time is now: Fri, 20 Dec 2019 22:03:02 UTC
