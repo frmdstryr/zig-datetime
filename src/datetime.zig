@@ -1031,7 +1031,7 @@ test "time-compare" {
     try testing.expect(t3.lt(t4));
 }
 
-test "time-format-iso-hm" {
+test "time-write-iso-hm" {
     const t = Time.fromTimestamp(1574908586928);
 
     var buf: [6]u8 = undefined;
@@ -1042,7 +1042,7 @@ test "time-format-iso-hm" {
     try testing.expectEqualSlices(u8, "T02:36", fbs.getWritten());
 }
 
-test "time-format-iso-hms" {
+test "time-write-iso-hms" {
     const t = Time.fromTimestamp(1574908586928);
 
     var buf: [9]u8 = undefined;
