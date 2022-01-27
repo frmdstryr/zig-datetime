@@ -418,7 +418,12 @@ pub const Date = struct {
 
     // Return date in ISO format YYYY-MM-DD
     const ISO_DATE_FMT = "{:0>4}-{:0>2}-{:0>2}";
-    pub fn formatIso(self: Date, buf: []u8) ![]u8 {
+
+    pub fn formatIso(self: Date, allocator: Allocator) ![]u8 {
+        return std.fmt.allocPrint(allocator, ISO_DATE_FMT, .{ self.year, self.month, self.day });
+    }
+
+    pub fn formatIsoBuf(self: Date, buf: []u8) ![]u8 {
         return std.fmt.bufPrint(buf, ISO_DATE_FMT, .{ self.year, self.month, self.day });
     }
 
@@ -690,7 +695,21 @@ test "date-parse-iso" {
     try testing.expectError(error.InvalidFormat, Date.parseIso("2000-1-1"));
 }
 
-test "date-format-iso" {
+test "date-format-iso-buf" {
+    var date_strs = [_][]const u8{
+        "0959-02-05",
+        "2018-12-15",
+    };
+
+    for (date_strs) |date_str| {
+        var d = try Date.parseIso(date_str);
+        const parsed_date_str = try d.formatIso(std.testing.allocator);
+        defer std.testing.allocator.free(parsed_date_str);
+        try testing.expectEqualStrings(date_str, parsed_date_str);
+    }
+}
+
+test "date-format-iso-buf" {
     var date_strs = [_][]const u8{
         "0959-02-05",
         "2018-12-15",
@@ -699,7 +718,7 @@ test "date-format-iso" {
     for (date_strs) |date_str| {
         var d = try Date.parseIso(date_str);
         var buf: [32]u8 = undefined;
-        try testing.expectEqualStrings(date_str, try d.formatIso(buf[0..]));
+        try testing.expectEqualStrings(date_str, try d.formatIsoBuf(buf[0..]));
     }
 }
 
