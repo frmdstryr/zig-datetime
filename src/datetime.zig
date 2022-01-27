@@ -945,6 +945,20 @@ pub const Time = struct {
     pub fn amOrPm(self: Time) []const u8 {
         return if (self.hour > 12) return "PM" else "AM";
     }
+
+    // -----------------------------------------------------------------------
+    // Formatting Methods
+    // -----------------------------------------------------------------------
+    const ISO_HM_FORMAT = "T{d:0>2}:{d:0>2}";
+    const ISO_HMS_FORMAT = "T{d:0>2}:{d:0>2}:{d:0>2}";
+
+    pub fn writeIsoHM(self: Time, writer: anytype) !void {
+        try std.fmt.format(writer, ISO_HM_FORMAT, .{ self.hour, self.minute });
+    }
+
+    pub fn writeIsoHMS(self: Time, writer: anytype) !void {
+        try std.fmt.format(writer, ISO_HMS_FORMAT, .{ self.hour, self.minute, self.second });
+    }
 };
 
 test "time-create" {
@@ -1015,6 +1029,28 @@ test "time-compare" {
     try testing.expect(t1.gt(t3));
     try testing.expect(t2.lt(t4));
     try testing.expect(t3.lt(t4));
+}
+
+test "time-format-iso-hm" {
+    const t = Time.fromTimestamp(1574908586928);
+
+    var buf: [6]u8 = undefined;
+    var fbs = std.io.fixedBufferStream(buf[0..]);
+
+    try t.writeIsoHM(fbs.writer());
+
+    try testing.expectEqualSlices(u8, "T02:36", fbs.getWritten());
+}
+
+test "time-format-iso-hms" {
+    const t = Time.fromTimestamp(1574908586928);
+
+    var buf: [9]u8 = undefined;
+    var fbs = std.io.fixedBufferStream(buf[0..]);
+
+    try t.writeIsoHMS(fbs.writer());
+
+    try testing.expectEqualSlices(u8, "T02:36:26", fbs.getWritten());
 }
 
 pub const Datetime = struct {
