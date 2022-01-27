@@ -695,7 +695,7 @@ test "date-parse-iso" {
     try testing.expectError(error.InvalidFormat, Date.parseIso("2000-1-1"));
 }
 
-test "date-format-iso-buf" {
+test "date-format-iso" {
     var date_strs = [_][]const u8{
         "0959-02-05",
         "2018-12-15",
