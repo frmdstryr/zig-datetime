@@ -1248,13 +1248,18 @@ pub const Datetime = struct {
 
     // Return a Datetime.Delta relative to this date
     pub fn sub(self: Datetime, other: Datetime) Delta {
-        const days = @intCast(i32, self.date.toOrdinal()) - @intCast(i32, other.date.toOrdinal());
-        var seconds = self.time.totalSeconds() - other.time.totalSeconds();
-        if (self.zone.offset != other.zone.offset) {
-            const mins = (self.zone.offset - other.zone.offset);
-            seconds += mins * time.s_per_min;
+        var days = @intCast(i32, self.date.toOrdinal()) - @intCast(i32, other.date.toOrdinal());
+        const offset = (self.zone.offset - other.zone.offset) * time.s_per_min;
+        var seconds = (self.time.totalSeconds() - other.time.totalSeconds()) + offset;
+        var ns = @intCast(i32, self.time.nanosecond) - @intCast(i32, other.time.nanosecond);
+        while (seconds > 0 and ns < 0) {
+            seconds -= 1;
+            ns += time.ns_per_s;
         }
-        const ns = @intCast(i32, self.time.nanosecond) - @intCast(i32, other.time.nanosecond);
+        while (days > 0 and seconds < 0) {
+            days -= 1;
+            seconds += time.s_per_day;
+        }
         return Delta{ .days = days, .seconds = seconds, .nanoseconds = ns };
     }
 
@@ -1539,6 +1544,25 @@ test "datetime-subtract" {
     b = try Datetime.create(2019, 12, 2, 11, 0, 0, 466545, null);
     delta = a.sub(b);
     try testing.expectEqual(delta.totalSeconds(), 13 + 51 * time.s_per_min);
+}
+
+test "datetime-subtract-delta" {
+    var now = Datetime.fromSeconds(1686183930);
+    var future = Datetime.fromSeconds(1686268800);
+    var delta = future.sub(now);
+    try testing.expect(delta.days == 0);
+    try testing.expect(delta.seconds == 84870);
+
+    delta = now.sub(future);
+    try testing.expect(delta.days == -1);
+    try testing.expect(delta.seconds == 1530);
+
+    now = Datetime.fromSeconds(1686183930);
+    future = Datetime.fromSeconds(1686270330);
+    delta = future.sub(now);
+    try testing.expect(delta.days == 1);
+    try testing.expect(delta.seconds == 0);
+
 }
 
 test "datetime-parse-modified-since" {
