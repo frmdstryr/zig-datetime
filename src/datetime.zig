@@ -1389,6 +1389,72 @@ pub const Datetime = struct {
         return Datetime.formatHttpFromTimestamp(buf, ts);
     }
 
+    /// Format datetime to ISO8601 format
+    /// e.g. "2023-06-10T14:06:40.015006+08:00"
+    pub fn formatISO8601(self: Datetime, allocator: Allocator, with_micro: bool) ![]const u8 {
+        var sign: u8 = '+';
+        if (self.zone.offset < 0) {
+            sign = '-';
+        }
+        const offset = std.math.absCast(self.zone.offset);
+
+        var micro_part_len: u3 = 0;
+        var micro_part: [7]u8 = undefined;
+        if (with_micro) {
+            _ = try std.fmt.bufPrint(&micro_part, ".{:0>6}", .{self.time.nanosecond / 1000});
+            micro_part_len = 7;
+        }
+
+        return try std.fmt.allocPrint(
+            allocator,
+            "{d:0>4}-{d:0>2}-{d:0>2}T{d:0>2}:{d:0>2}:{d:0>2}{s}{c}{d:0>2}:{d:0>2}",
+            .{
+                self.date.year,
+                self.date.month,
+                self.date.day,
+                self.time.hour,
+                self.time.minute,
+                self.time.second,
+                micro_part[0..micro_part_len],
+                sign,
+                @divFloor(offset, 60),
+                @mod(offset, 60),
+            },
+        );
+    }
+
+    pub fn formatISO8601Buf(self: Datetime, buf: []u8, with_micro: bool) ![]const u8 {
+        var sign: u8 = '+';
+        if (self.zone.offset < 0) {
+            sign = '-';
+        }
+        const offset = std.math.absCast(self.zone.offset);
+
+        var micro_part_len: usize = 0;
+        var micro_part: [7]u8 = undefined;
+        if (with_micro) {
+            _ = try std.fmt.bufPrint(&micro_part, ".{:0>6}", .{self.time.nanosecond / 1000});
+            micro_part_len = 7;
+        }
+
+        return try std.fmt.bufPrint(
+            buf,
+            "{d:0>4}-{d:0>2}-{d:0>2}T{d:0>2}:{d:0>2}:{d:0>2}{s}{c}{d:0>2}:{d:0>2}",
+            .{
+                self.date.year,
+                self.date.month,
+                self.date.day,
+                self.time.hour,
+                self.time.minute,
+                self.time.second,
+                micro_part[0..micro_part_len],
+                sign,
+                @divFloor(offset, 60),
+                @mod(offset, 60),
+            },
+        );
+    }
+
     // ------------------------------------------------------------------------
     // Parsing methods
     // ------------------------------------------------------------------------
@@ -1562,7 +1628,6 @@ test "datetime-subtract-delta" {
     delta = future.sub(now);
     try testing.expect(delta.days == 1);
     try testing.expect(delta.seconds == 0);
-
 }
 
 test "datetime-parse-modified-since" {
@@ -1595,4 +1660,43 @@ test "readme-example" {
     std.log.warn("The time is now: {s}\n", .{now_str});
     // The time is now: Fri, 20 Dec 2019 22:03:02 UTC
 
+}
+
+test "datetime-format-ISO8601" {
+    const allocator = std.testing.allocator;
+
+    var dt = try Datetime.create(2023, 6, 10, 9, 12, 52, 49612000, null);
+    var dt_str = try dt.formatISO8601(allocator, false);
+    try testing.expectEqualStrings("2023-06-10T09:12:52+00:00", dt_str);
+    allocator.free(dt_str);
+
+    // test positive tz
+    dt = try Datetime.create(2023, 6, 10, 18, 12, 52, 49612000, &timezones.Japan);
+    dt_str = try dt.formatISO8601(allocator, false);
+    try testing.expectEqualStrings("2023-06-10T18:12:52+09:00", dt_str);
+    allocator.free(dt_str);
+
+    // test negative tz
+    dt = try Datetime.create(2023, 6, 10, 6, 12, 52, 49612000, &timezones.Atlantic.Stanley);
+    dt_str = try dt.formatISO8601(allocator, false);
+    try testing.expectEqualStrings("2023-06-10T06:12:52-03:00", dt_str);
+    allocator.free(dt_str);
+
+    // test tz offset div and mod
+    dt = try Datetime.create(2023, 6, 10, 22, 57, 52, 49612000, &timezones.Pacific.Chatham);
+    dt_str = try dt.formatISO8601(allocator, false);
+    try testing.expectEqualStrings("2023-06-10T22:57:52+12:45", dt_str);
+    allocator.free(dt_str);
+
+    // test microseconds
+    dt = try Datetime.create(2023, 6, 10, 5, 57, 52, 49612000, &timezones.America.Aruba);
+    dt_str = try dt.formatISO8601(allocator, true);
+    try testing.expectEqualStrings("2023-06-10T05:57:52.049612-04:00", dt_str);
+    allocator.free(dt_str);
+
+    // test format buf
+    var buf: [64]u8 = undefined;
+    dt = try Datetime.create(2023, 6, 10, 14, 6, 40, 15006000, &timezones.Hongkong);
+    dt_str = try dt.formatISO8601Buf(&buf, true);
+    try testing.expectEqualStrings("2023-06-10T14:06:40.015006+08:00", dt_str);
 }
