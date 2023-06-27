@@ -321,7 +321,7 @@ pub const Date = struct {
 
     // Return the number of seconds since 1 Jan 1970
     pub fn toSeconds(self: Date) f64 {
-        const days = @as(i64, @intCast(self.toOrdinal())) - @as(i64, EPOCH);
+        const days = @intCast(self.toOrdinal()) - @as(i64, EPOCH);
         return @floatFromInt(days * time.s_per_day);
     }
 
@@ -335,8 +335,8 @@ pub const Date = struct {
     // Create a UTC timestamp in milliseconds relative to Jan 1st 1970
     pub fn toTimestamp(self: Date) i64 {
         const d: i64 = @intCast(daysBeforeYear(self.year));
-        const days = d - @as(i64, EPOCH) + @as(i64, @intCast(self.dayOfYear()));
-        return @as(i64, @intCast(days)) * time.ms_per_day;
+        const days = d - @as(i64, EPOCH) + @intCast(self.dayOfYear());
+        return days * time.ms_per_day;
     }
 
     // Convert to an ISOCalendar date containing the year, week number, and
@@ -502,9 +502,9 @@ pub const Date = struct {
         // Shift year
         var year = self.year;
         if (delta.years < 0) {
-            year -= @as(u16, @intCast(-delta.years));
+            year -= @intCast(-delta.years);
         } else {
-            year += @as(u16, @intCast(delta.years));
+            year += @intCast(delta.years);
         }
         var ord = daysBeforeYear(year);
         var days = self.dayOfYear();
@@ -527,9 +527,9 @@ pub const Date = struct {
 
         // Shift days
         if (delta.days < 0) {
-            ord -= @as(u32, @intCast(-delta.days));
+            ord -= @intCast(-delta.days);
         } else {
-            ord += @as(u32, @intCast(delta.days));
+            ord += @intCast(delta.days);
         }
         return Date.fromOrdinal(ord);
     }
@@ -1099,12 +1099,12 @@ pub const Datetime = struct {
                     if (self.years > 0) {
                         const y: u32 = @intCast(self.years);
                         const b = daysBeforeYear(dt.date.year + y);
-                        days += @as(i32, @intCast(b - a));
+                        days += @intCast(b - a);
                     } else {
                         const y: u32 = @intCast(-self.years);
                         assert(y < dt.date.year); // Does not work below year 1
                         const b = daysBeforeYear(dt.date.year - y);
-                        days -= @as(i32, @intCast(a - b));
+                        days -= @intCast(a - b);
                     }
                 }
             } else {
@@ -1248,10 +1248,10 @@ pub const Datetime = struct {
 
     // Return a Datetime.Delta relative to this date
     pub fn sub(self: Datetime, other: Datetime) Delta {
-        var days = @as(i32, @intCast(self.date.toOrdinal())) - @as(i32, @intCast(other.date.toOrdinal()));
+        var days = @as(i32, @intCast(self.date.toOrdinal())) - @intCast(other.date.toOrdinal());
         const offset = (self.zone.offset - other.zone.offset) * time.s_per_min;
         var seconds = (self.time.totalSeconds() - other.time.totalSeconds()) + offset;
-        var ns = @as(i32, @intCast(self.time.nanosecond)) - @as(i32, @intCast(other.time.nanosecond));
+        var ns = @as(i32, @intCast(self.time.nanosecond)) - @intCast(other.time.nanosecond);
         while (seconds > 0 and ns < 0) {
             seconds -= 1;
             ns += time.ns_per_s;
@@ -1305,7 +1305,7 @@ pub const Datetime = struct {
         var s = delta.seconds + self.time.totalSeconds();
 
         // Rollover ns to s
-        var ns = delta.nanoseconds + @as(i32, @intCast(self.time.nanosecond));
+        var ns = delta.nanoseconds + @intCast(self.time.nanosecond);
         if (ns >= time.ns_per_s) {
             s += 1;
             ns -= time.ns_per_s;
@@ -1319,12 +1319,12 @@ pub const Datetime = struct {
         // Rollover s to days
         if (s >= time.s_per_day) {
             const d = @divFloor(s, time.s_per_day);
-            days += @as(i32, @intCast(d));
+            days += @intCast(d);
             s -= d * time.s_per_day;
         } else if (s < 0) {
             if (s < -time.s_per_day) { // Wrap multiple
                 const d = @divFloor(s, -time.s_per_day);
-                days -= @as(i32, @intCast(d));
+                days -= @intCast(d);
                 s += d * time.s_per_day;
             }
             days -= 1;
