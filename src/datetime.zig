@@ -842,7 +842,7 @@ pub const Time = struct {
     // Create Time from a UTC Timestamp in milliseconds
     pub fn fromTimestamp(timestamp: i64) Time {
         const remainder = @mod(timestamp, time.ms_per_day);
-        var t: u64 = @abs(remainder);
+        var t: u64 = std.math.absCast(remainder);
         // t is now only the time part of the day
         const h: u32 = @intCast(@divFloor(t, time.ms_per_hour));
         t -= h * time.ms_per_hour;
@@ -1176,7 +1176,7 @@ pub const Datetime = struct {
     // From POSIX timestamp in milliseconds relative to 1 Jan 1970
     pub fn fromTimestamp(timestamp: i64) Datetime {
         const t = @divFloor(timestamp, time.ms_per_day);
-        const d: u64 = @abs(t);
+        const d: u64 = std.math.absCast(t);
         const days = if (timestamp >= 0) d + EPOCH else EPOCH - d;
         assert(days >= 0 and days <= MAX_ORDINAL);
         return Datetime{
@@ -1396,7 +1396,7 @@ pub const Datetime = struct {
         if (self.zone.offset < 0) {
             sign = '-';
         }
-        const offset = @abs(self.zone.offset);
+        const offset = std.math.absCast(self.zone.offset);
 
         var micro_part_len: u3 = 0;
         var micro_part: [7]u8 = undefined;
@@ -1428,7 +1428,7 @@ pub const Datetime = struct {
         if (self.zone.offset < 0) {
             sign = '-';
         }
-        const offset = @abs(self.zone.offset);
+        const offset = std.math.absCast(self.zone.offset);
 
         var micro_part_len: usize = 0;
         var micro_part: [7]u8 = undefined;
