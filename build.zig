@@ -15,13 +15,13 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
-    _ = b.addModule("zig-datetime", .{ .root_source_file = .{ .path = "src/main.zig" } });
+    _ = b.addModule("zig-datetime", .{ .root_source_file = b.path("src/main.zig") });
 
     const lib = b.addStaticLibrary(.{
         .name = "zig-datetime",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -33,7 +33,7 @@ pub fn build(b: *std.Build) void {
 
     // Creates a step for unit testing.
     const main_tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
