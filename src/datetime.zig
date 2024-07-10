@@ -1250,7 +1250,7 @@ pub const Datetime = struct {
     pub fn sub(self: Datetime, other: Datetime) Delta {
         var days = @as(i32, @intCast(self.date.toOrdinal())) - @as(i32, @intCast(other.date.toOrdinal()));
         const offset = (self.zone.offset - other.zone.offset) * time.s_per_min;
-        var seconds = (self.time.totalSeconds() - other.time.totalSeconds()) + offset;
+        var seconds = (self.time.totalSeconds() - other.time.totalSeconds()) - offset;
         var ns = @as(i32, @intCast(self.time.nanosecond)) - @as(i32, @intCast(other.time.nanosecond));
         while (seconds > 0 and ns < 0) {
             seconds -= 1;
@@ -1610,6 +1610,17 @@ test "datetime-subtract" {
     b = try Datetime.create(2019, 12, 2, 11, 0, 0, 466545, null);
     delta = a.sub(b);
     try testing.expectEqual(delta.totalSeconds(), 13 + 51 * time.s_per_min);
+}
+
+test "datetime-subtract-timezone" {
+    var a = try Datetime.create(2024, 7, 10, 23, 35, 0, 0, &Timezone.create("+0400", 4 * 60));
+    var b = try Datetime.create(2024, 7, 10, 19, 34, 0, 0, null);
+    var delta = a.sub(b);
+    try testing.expectEqual(delta.days, 0);
+    try testing.expectEqual(delta.totalSeconds(), 60);
+    delta = b.sub(a);
+    try testing.expectEqual(delta.days, 0);
+    try testing.expectEqual(delta.totalSeconds(), -60);
 }
 
 test "datetime-subtract-delta" {
