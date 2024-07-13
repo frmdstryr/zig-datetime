@@ -1,0 +1,12 @@
+.{
+    .name = "zig-datetime",
+    .version = "0.8.0",
+
+    .paths = .{
+        "src",
+        "build.zig",
+        "build.zig.zon",
+        "LICENSE",
+        "README.md",
+    },
+}
