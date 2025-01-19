@@ -1360,7 +1360,7 @@ pub const Datetime = struct {
             self.time.hour,
             self.time.minute,
             self.time.second,
-            self.zone.name, // TODO: Should be GMT
+            timezones.GMT.name,
         });
     }
 
@@ -1373,7 +1373,7 @@ pub const Datetime = struct {
             self.time.hour,
             self.time.minute,
             self.time.second,
-            self.zone.name, // TODO: Should be GMT
+            timezones.GMT.name,
         });
     }
 
@@ -1664,12 +1664,12 @@ test "readme-example" {
     assert(next_year.month == 1);
     assert(next_year.day == 1);
 
-    // In UTC
+    // In GMT
     const now = Datetime.now();
     const now_str = try now.formatHttp(allocator);
     defer allocator.free(now_str);
     std.log.warn("The time is now: {s}\n", .{now_str});
-    // The time is now: Fri, 20 Dec 2019 22:03:02 UTC
+    // The time is now: Sun, 19 Jan 2025 06:09:35 GMT
 
 }
 
