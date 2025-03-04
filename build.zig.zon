@@ -1,6 +1,7 @@
 .{
-    .name = "zig-datetime",
+    .name = .datetime,
     .version = "0.8.0",
+    .fingerprint = 0x93f3c6cacc579370, // Changing this has security and trust implications.
 
     .paths = .{
         "src",
