@@ -659,13 +659,19 @@ pub const WET = create("WET", 0);
 pub const W_SU = create("W-SU", 180);
 pub const Zulu = create("Zulu", 0);
 
-fn findWithinTimezones(TS: *const [20]type, timezone: []const u8) ?Timezone {
-    inline for (TS) |T| {
-        inline for (@typeInfo(T).@"struct".decls[0..]) |d| {
-            const tz = if (@hasDecl(T, d.name)) @field(T, d.name) else break;
-            const ft = @TypeOf(tz);
-            if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
-                return tz;
+fn findWithinTimezones(comptime Type: type, timezone: []const u8) ?Timezone {
+    inline for (comptime @typeInfo(Type).@"struct".decls) |T| {
+        const it = @field(Type, T.name);
+        if (@TypeOf(it) == Timezone and std.mem.eql(u8, it.name, timezone)) {
+            return it;
+        }
+
+        if (@TypeOf(it) == type) {
+            const Info = @typeInfo(it);
+            if (@hasDecl(@TypeOf(Info), "Struct")) {
+                const found = findWithinTimezones(it, timezone);
+                if (found != null)
+                    return found;
             }
         }
     }
@@ -674,30 +680,7 @@ fn findWithinTimezones(TS: *const [20]type, timezone: []const u8) ?Timezone {
 }
 
 pub fn getByName(timezone: []const u8) !Timezone {
-    const zones = [_]type{
-        Africa,
-        America.Argentina,
-        America.Indiana,
-        America.Kentucky,
-        America.North_Dakota,
-        America,
-        Antarctica,
-        Arctic,
-        Asia,
-        Atlantic,
-        Australia,
-        Brazil,
-        Canada,
-        Chile,
-        Etc,
-        Europe,
-        Indian,
-        Mexico,
-        Pacific,
-        US,
-    };
-
-    return findWithinTimezones(&zones, timezone) orelse
+    return findWithinTimezones(@This(), timezone) orelse
         error.InvalidTimeZone;
 }
 
