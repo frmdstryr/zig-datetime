@@ -659,19 +659,40 @@ pub const WET = create("WET", 0);
 pub const W_SU = create("W-SU", 180);
 pub const Zulu = create("Zulu", 0);
 
-// TODO: Allow lookup by name
-//pub fn getAll() []*const Timezone {
-//    for (comptime std.meta.fields(@This())) |field {
-//
-//    }
-//}
+fn findWithinTimezones(comptime Type: type, timezone: []const u8) ?Timezone {
+    inline for (comptime @typeInfo(Type).@"struct".decls) |T| {
+        const it = @field(Type, T.name);
+        if (@TypeOf(it) == Timezone and std.mem.eql(u8, it.name, timezone)) {
+            return it;
+        }
 
-//pub fn get(name: []const u8) ?*const Timezone {
-//    return ALL_TIMEZONES.getValue(name);
-//}
+        if (@TypeOf(it) == type) {
+            const Info = @typeInfo(it);
+            if (@hasDecl(@TypeOf(Info), "Struct")) {
+                const found = findWithinTimezones(it, timezone);
+                if (found != null)
+                    return found;
+            }
+        }
+    }
+
+    return null;
+}
+
+pub fn getByName(timezone: []const u8) !Timezone {
+    return findWithinTimezones(@This(), timezone) orelse
+        error.InvalidTimeZone;
+}
 
 test "timezone-get" {
     const testing = std.testing;
     //try testing.expect(get("America/New_York").? == America.New_York);
     try testing.expect(America.New_York.offset == -300);
+}
+
+test "timezone-get-by-name" {
+    const testing = std.testing;
+    try testing.expectEqual(America.Argentina.Buenos_Aires, getByName("America/Argentina/Buenos_Aires"));
+    try testing.expectEqual(Asia.Nicosia, getByName("Asia/Nicosia"));
+    try testing.expectError(error.InvalidTimeZone, getByName("Europe/Invalid"));
 }
