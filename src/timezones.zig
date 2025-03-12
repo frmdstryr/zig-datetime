@@ -659,19 +659,177 @@ pub const WET = create("WET", 0);
 pub const W_SU = create("W-SU", 180);
 pub const Zulu = create("Zulu", 0);
 
-// TODO: Allow lookup by name
-//pub fn getAll() []*const Timezone {
-//    for (comptime std.meta.fields(@This())) |field {
-//
-//    }
-//}
+pub fn getByName(timezone: []const u8) !Timezone {
+    inline for (@typeInfo(Africa).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(Africa, d.name)) @field(Africa, d.name) else break;
+        if (std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
 
-//pub fn get(name: []const u8) ?*const Timezone {
-//    return ALL_TIMEZONES.getValue(name);
-//}
+    inline for (@typeInfo(America).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(America, d.name)) @field(America, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+
+    inline for (@typeInfo(America.Argentina).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(America.Argentina, d.name)) @field(America.Argentina, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+
+    inline for (@typeInfo(America.Indiana).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(America.Indiana, d.name)) @field(America.Indiana, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+
+    inline for (@typeInfo(America.Kentucky).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(America.Kentucky, d.name)) @field(America.Kentucky, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+
+    inline for (@typeInfo(America.North_Dakota).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(America.North_Dakota, d.name)) @field(America.North_Dakota, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+
+    inline for (@typeInfo(Antarctica).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(Antarctica, d.name)) @field(Antarctica, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+
+    inline for (@typeInfo(Arctic).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(Arctic, d.name)) @field(Arctic, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+
+    inline for (@typeInfo(Asia).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(Asia, d.name)) @field(Asia, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+
+    inline for (@typeInfo(Atlantic).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(Atlantic, d.name)) @field(Atlantic, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+
+    inline for (@typeInfo(Australia).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(Australia, d.name)) @field(Australia, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+
+    inline for (@typeInfo(Brazil).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(Brazil, d.name)) @field(Brazil, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+
+    inline for (@typeInfo(Canada).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(Canada, d.name)) @field(Canada, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+
+    inline for (@typeInfo(Chile).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(Chile, d.name)) @field(Chile, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+
+    inline for (@typeInfo(Etc).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(Etc, d.name)) @field(Etc, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+    inline for (@typeInfo(Europe).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(Europe, d.name)) @field(Europe, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+
+    inline for (@typeInfo(Indian).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(Indian, d.name)) @field(Indian, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+
+    inline for (@typeInfo(Mexico).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(Mexico, d.name)) @field(Mexico, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+
+    inline for (@typeInfo(Pacific).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(Pacific, d.name)) @field(Pacific, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+
+    inline for (@typeInfo(US).@"struct".decls[0..]) |d| {
+        const tz = if (@hasDecl(US, d.name)) @field(US, d.name) else break;
+        const ft = @TypeOf(tz);
+        if (ft == Timezone and std.mem.eql(u8, tz.name, timezone)) {
+            return tz;
+        }
+    }
+
+    return error.InvalidTimeZone;
+}
 
 test "timezone-get" {
     const testing = std.testing;
     //try testing.expect(get("America/New_York").? == America.New_York);
     try testing.expect(America.New_York.offset == -300);
+}
+
+test "timezone-get-by-name" {
+    const testing = std.testing;
+    try testing.expectEqual(America.Argentina.Buenos_Aires, getByName("America/Argentina/Buenos_Aires"));
+    try testing.expectEqual(Asia.Nicosia, getByName("Asia/Nicosia"));
+    try testing.expectError(error.InvalidTimeZone, getByName("Europe/Invalid"));
 }
