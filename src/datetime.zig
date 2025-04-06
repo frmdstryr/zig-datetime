@@ -64,6 +64,15 @@ pub const Month = enum(u4) {
     }
 };
 
+pub const Occurance = enum(u3) {
+    First = 0,
+    Second = 1,
+    Third = 2,
+    Fourth = 3,
+    Fifth = 4,
+    Last = 5,
+};
+
 test "month-parse-abbr" {
     try testing.expectEqual(try Month.parseAbbr("Jan"), .January);
     try testing.expectEqual(try Month.parseAbbr("Oct"), .October);
@@ -214,6 +223,26 @@ pub const Date = struct {
             .month = @intCast(month),
             .day = @intCast(day),
         };
+    }
+
+    // Create the date for a given year, month, and n'th weekday
+    pub fn fromNthWeekday(year: u32, month: u32, nth: Occurance, wd: Weekday) !Date {
+        if (year < MIN_YEAR or year > MAX_YEAR) return error.InvalidDate;
+        if (month < 1 or month > 12) return error.InvalidDate;
+        // Since we just validated the ranges we can now savely cast
+        const start = ymd2ord(@intCast(year), @intCast(month), 1);
+        const dow = start % 7;
+        const exp_dow: u32 = @intFromEnum(wd);
+        const n: u32 = @intFromEnum(nth);
+        var day = if (exp_dow >= dow) (exp_dow - dow) else (7 + exp_dow - dow);
+        day += 1 + n * 7;
+        if (nth == .Last) {
+            const max = daysInMonth(year, month);
+            while (day > max) {
+                day -= 7;
+            }
+        }
+        return Date.create(@intCast(year), @intCast(month), @intCast(day));
     }
 
     // Return a copy of the date
@@ -468,10 +497,15 @@ pub const Date = struct {
         return @tagName(self.dayOfWeek());
     }
 
+    // Return the month as an enum
+    pub fn monthOfYear(self: Date) Month {
+        assert(self.month >= 1 and self.month <= 12);
+        return @enumFromInt(self.month);
+    }
+
     // Return the name of the day of the month, eg "January"
     pub fn monthName(self: Date) []const u8 {
-        assert(self.month >= 1 and self.month <= 12);
-        return @tagName(@as(Month, @enumFromInt(self.month)));
+        return @tagName(self.monthOfYear());
     }
 
     // ------------------------------------------------------------------------
@@ -600,6 +634,34 @@ test "date-from-seconds" {
     //     date = Date.fromSeconds(tmax);
     //     try testing.expect(date.eql(max_date));
     //     try testing.expectEqual(date.toSeconds(), tmax);
+}
+
+test "date-from-nth-weekday" {
+    var date = Date.fromNthWeekday(2025, 4, .First, .Monday);
+    try testing.expectEqual(try Date.create(2025, 4, 7), date); // First Mon
+    date = Date.fromNthWeekday(2025, 4, .First, .Tuesday);
+    try testing.expectEqual(try Date.create(2025, 4, 1), date); // First Tues
+    date = Date.fromNthWeekday(2025, 4, .First, .Wednesday);
+    try testing.expectEqual(try Date.create(2025, 4, 2), date); // First Wed
+    date = Date.fromNthWeekday(2025, 4, .First, .Thursday);
+    try testing.expectEqual(try Date.create(2025, 4, 3), date); // First Thu
+    date = Date.fromNthWeekday(2025, 4, .First, .Friday);
+    try testing.expectEqual(try Date.create(2025, 4, 4), date); // First Fri
+    date = Date.fromNthWeekday(2025, 4, .First, .Saturday);
+    try testing.expectEqual(try Date.create(2025, 4, 5), date); // First Sat
+    date = Date.fromNthWeekday(2025, 4, .First, .Sunday);
+    try testing.expectEqual(try Date.create(2025, 4, 6), date); // First Sun
+
+    date = Date.fromNthWeekday(2025, 4, .Second, .Monday);
+    try testing.expectEqual(try Date.create(2025, 4, 14), date);
+    date = Date.fromNthWeekday(2025, 4, .Second, .Tuesday);
+    try testing.expectEqual(try Date.create(2025, 4, 8), date);
+
+    date = Date.fromNthWeekday(2025, 4, .Last, .Tuesday);
+    try testing.expectEqual(try Date.create(2025, 4, 29), date);
+
+    date = Date.fromNthWeekday(2024, 11, .Last, .Sunday);
+    try testing.expectEqual(try Date.create(2024, 11, 24), date); // Last sunday in november 2024
 }
 
 test "date-day-of-year" {
@@ -794,17 +856,33 @@ test "date-isocalendar" {
 }
 
 pub const Timezone = struct {
+    // Function to compute DST offset
+    pub const DaylightSavings = *const fn (date: Date, time: Time) i32;
+
     offset: i16, // In minutes
     name: []const u8,
+    dst: ?DaylightSavings,
 
-    // Auto register timezones
     pub fn create(name: []const u8, offset: i16) Timezone {
-        const self = Timezone{ .offset = offset, .name = name };
-        return self;
+        return Timezone{ .offset = offset, .name = name, .dst = null };
     }
 
-    pub fn offsetSeconds(self: Timezone) i32 {
-        return @as(i32, self.offset) * time.s_per_min;
+    pub fn createDst(name: []const u8, offset: i16, dst: DaylightSavings) Timezone {
+        return Timezone{ .offset = offset, .name = name, .dst = dst };
+    }
+
+    // Check if two timezones are the same or differ only by their name
+    pub fn isSame(self: *const Timezone, other: *const Timezone) bool {
+        return self.offset == other.offset and self.dst == other.dst;
+    }
+
+    // Calculate the timezone offset in minutes for the given date and time factoring in daylight savings if relevant
+    pub fn dstOffset(self: Timezone, d: Date, t: Time) i32 {
+        const mins = @as(i32, self.offset);
+        if (self.dst) |f| {
+            return mins + f(d, t);
+        }
+        return mins;
     }
 };
 
@@ -1196,7 +1274,7 @@ pub const Datetime = struct {
     pub fn toTimestamp(self: Datetime) i128 {
         const ds = self.date.toTimestamp();
         const ts = self.time.toTimestamp();
-        const zs = self.zone.offsetSeconds() * time.ms_per_s;
+        const zs = self.zone.dstOffset(self.date, self.time) * time.s_per_min * time.ms_per_s;
         return ds + ts - zs;
     }
 
@@ -1208,20 +1286,18 @@ pub const Datetime = struct {
     }
 
     pub fn cmpSameTimezone(self: Datetime, other: Datetime) Order {
-        assert(self.zone.offset == other.zone.offset);
+        assert(self.zone.isSame(other.zone));
         const r = self.date.cmp(other.date);
         if (r != .eq) return r;
         return self.time.cmp(other.time);
     }
 
     pub fn cmp(self: Datetime, other: Datetime) Order {
-        if (self.zone.offset == other.zone.offset) {
+        if (self.zone.isSame(other.zone)) {
             return self.cmpSameTimezone(other);
         }
-        // Shift both to utc
-        const a = self.shiftTimezone(&timezones.UTC);
-        const b = other.shiftTimezone(&timezones.UTC);
-        return a.cmpSameTimezone(b);
+        const shifted = other.shiftTimezone(self.zone);
+        return self.cmpSameTimezone(shifted);
     }
 
     pub fn gt(self: Datetime, other: Datetime) bool {
@@ -1249,7 +1325,7 @@ pub const Datetime = struct {
     // Return a Datetime.Delta relative to this date
     pub fn sub(self: Datetime, other: Datetime) Delta {
         var days = @as(i32, @intCast(self.date.toOrdinal())) - @as(i32, @intCast(other.date.toOrdinal()));
-        const offset = (self.zone.offset - other.zone.offset) * time.s_per_min;
+        const offset = (self.zone.dstOffset(self.date, self.time) - other.zone.dstOffset(other.date, other.time)) * time.s_per_min;
         var seconds = (self.time.totalSeconds() - other.time.totalSeconds()) - offset;
         var ns = @as(i32, @intCast(self.time.nanosecond)) - @as(i32, @intCast(other.time.nanosecond));
         while (seconds > 0 and ns < 0) {
@@ -1286,10 +1362,14 @@ pub const Datetime = struct {
     // Convert to the given timeszone
     pub fn shiftTimezone(self: Datetime, zone: *const Timezone) Datetime {
         var dt =
-            if (self.zone.offset == zone.offset)
-            (self.copy() catch unreachable)
-        else
-            self.shiftMinutes(zone.offset - self.zone.offset);
+            if (self.zone.isSame(zone))
+                (self.copy() catch unreachable)
+            else if (self.zone.dst == zone.dst)
+                // Any DST effects whill be the same so just compare the offset directly
+                self.shiftMinutes(zone.offset - self.zone.offset)
+            else
+                // Shift adjusting for any DST effects
+                self.shiftMinutes(zone.dstOffset(self.date, self.time) - self.zone.dstOffset(self.date, self.time));
         dt.zone = zone;
         return dt;
     }
@@ -1393,10 +1473,11 @@ pub const Datetime = struct {
     /// e.g. "2023-06-10T14:06:40.015006+08:00"
     pub fn formatISO8601(self: Datetime, allocator: Allocator, with_micro: bool) ![]const u8 {
         var sign: u8 = '+';
-        if (self.zone.offset < 0) {
+        const dst_offset = self.zone.dstOffset(self.date, self.time);
+        if (dst_offset < 0) {
             sign = '-';
         }
-        const offset = @abs(self.zone.offset);
+        const offset = @abs(dst_offset);
 
         var micro_part_len: u3 = 0;
         var micro_part: [7]u8 = undefined;
@@ -1425,10 +1506,11 @@ pub const Datetime = struct {
 
     pub fn formatISO8601Buf(self: Datetime, buf: []u8, with_micro: bool) ![]const u8 {
         var sign: u8 = '+';
-        if (self.zone.offset < 0) {
+        const dst_offset = self.zone.dstOffset(self.date, self.time);
+        if (dst_offset < 0) {
             sign = '-';
         }
-        const offset = @abs(self.zone.offset);
+        const offset = @abs(dst_offset);
 
         var micro_part_len: usize = 0;
         var micro_part: [7]u8 = undefined;
@@ -1671,6 +1753,14 @@ test "readme-example" {
     std.log.warn("The time is now: {s}\n", .{now_str});
     // The time is now: Fri, 20 Dec 2019 22:03:02 UTC
 
+}
+
+test "datetime-now-in-ny" {
+    const allocator = std.testing.allocator;
+    const now = Datetime.now().shiftTimezone(&timezones.America.New_York);
+    const now_str = try now.formatHttp(allocator);
+    defer allocator.free(now_str);
+    std.log.warn("New york time is: {s}\n", .{now_str});
 }
 
 test "datetime-format-ISO8601" {

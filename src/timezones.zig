@@ -6,8 +6,40 @@
 
 const std = @import("std");
 
-const Timezone = @import("datetime.zig").Timezone;
+const datetime = @import("datetime.zig");
+const Timezone = datetime.Timezone;
+const Date = datetime.Date;
+const Time = datetime.Time;
 const create = Timezone.create;
+const createDst = Timezone.createDst;
+
+// DST conversion functions
+// If date and time is between 2nd Sunday in March at 2am and 2nd Sunday in November at 2am.
+// Return a 1 hr offset
+pub fn DstMarchAt2ToNovAt2(d: Date, t: Time) i32 {
+    const offset = 60;
+    return switch (d.monthOfYear()) {
+        .January, .February => 0,
+        .March => blk: {
+            const cutoff = Date.fromNthWeekday(d.year, d.month, .Second, .Sunday) catch unreachable;
+            break :blk switch (d.cmp(cutoff)) {
+                .lt => 0,
+                .eq => if (t.hour >= 2) offset else 0,
+                .gt => offset,
+            };
+        },
+        else => offset,
+        .November => blk: {
+            const cutoff = Date.fromNthWeekday(d.year, d.month, .Second, .Sunday) catch unreachable;
+            break :blk switch (d.cmp(cutoff)) {
+                .lt => offset,
+                .eq => if (t.hour < 2) offset else 0,
+                .gt => 0,
+            };
+        },
+        .December => 0,
+    };
+}
 
 // Timezones
 pub const Africa = struct {
@@ -108,7 +140,7 @@ pub const America = struct {
     pub const Catamarca = create("America/Catamarca", -180);
     pub const Cayenne = create("America/Cayenne", -180);
     pub const Cayman = create("America/Cayman", -300);
-    pub const Chicago = create("America/Chicago", -360);
+    pub const Chicago = createDst("America/Chicago", -360, DstMarchAt2ToNovAt2);
     pub const Chihuahua = create("America/Chihuahua", -420);
     pub const Coral_Harbour = create("America/Coral_Harbour", -300);
     pub const Cordoba = create("America/Cordoba", -180);
@@ -119,15 +151,15 @@ pub const America = struct {
     pub const Danmarkshavn = create("America/Danmarkshavn", 0);
     pub const Dawson = create("America/Dawson", -480);
     pub const Dawson_Creek = create("America/Dawson_Creek", -420);
-    pub const Denver = create("America/Denver", -420);
-    pub const Detroit = create("America/Detroit", -300);
+    pub const Denver = createDst("America/Denver", -420, DstMarchAt2ToNovAt2);
+    pub const Detroit = createDst("America/Detroit", -300, DstMarchAt2ToNovAt2);
     pub const Dominica = create("America/Dominica", -240);
     pub const Edmonton = create("America/Edmonton", -420);
     pub const Eirunepe = create("America/Eirunepe", -300);
     pub const El_Salvador = create("America/El_Salvador", -360);
     pub const Ensenada = create("America/Ensenada", -480);
-    pub const Fort_Nelson = create("America/Fort_Nelson", -420);
-    pub const Fort_Wayne = create("America/Fort_Wayne", -300);
+    pub const Fort_Nelson = createDst("America/Fort_Nelson", -420, DstMarchAt2ToNovAt2);
+    pub const Fort_Wayne = createDst("America/Fort_Wayne", -300, DstMarchAt2ToNovAt2);
     pub const Fortaleza = create("America/Fortaleza", -180);
     pub const Glace_Bay = create("America/Glace_Bay", -240);
     pub const Godthab = create("America/Godthab", -180);
@@ -152,7 +184,7 @@ pub const America = struct {
         pub const Vincennes = create("America/Indiana/Vincennes", -300);
         pub const Winamac = create("America/Indiana/Winamac", -300);
     };
-    pub const Indianapolis = create("America/Indianapolis", -300);
+    pub const Indianapolis = createDst("America/Indianapolis", -300, DstMarchAt2ToNovAt2);
     pub const Inuvik = create("America/Inuvik", -420);
     pub const Iqaluit = create("America/Iqaluit", -300);
     pub const Jamaica = create("America/Jamaica", -300);
@@ -160,15 +192,15 @@ pub const America = struct {
     pub const Juneau = create("America/Juneau", -540);
     pub const Kentucky = struct {
         // FIXME: Name conflict
-        pub const Louisville_ = create("America/Kentucky/Louisville", -300);
-        pub const Monticello = create("America/Kentucky/Monticello", -300);
+        pub const Louisville_ = createDst("America/Kentucky/Louisville", -300, DstMarchAt2ToNovAt2);
+        pub const Monticello = createDst("America/Kentucky/Monticello", -300, DstMarchAt2ToNovAt2);
     };
     pub const Knox_IN = create("America/Knox_IN", -360);
     pub const Kralendijk = create("America/Kralendijk", -240);
     pub const La_Paz = create("America/La_Paz", -240);
     pub const Lima = create("America/Lima", -300);
-    pub const Los_Angeles = create("America/Los_Angeles", -480);
-    pub const Louisville = create("America/Louisville", -300);
+    pub const Los_Angeles = createDst("America/Los_Angeles", -480, DstMarchAt2ToNovAt2);
+    pub const Louisville = createDst("America/Louisville", -300, DstMarchAt2ToNovAt2);
     pub const Lower_Princes = create("America/Lower_Princes", -240);
     pub const Maceio = create("America/Maceio", -180);
     pub const Managua = create("America/Managua", -360);
@@ -189,14 +221,14 @@ pub const America = struct {
     pub const Montreal = create("America/Montreal", -300);
     pub const Montserrat = create("America/Montserrat", -240);
     pub const Nassau = create("America/Nassau", -300);
-    pub const New_York = create("America/New_York", -300);
+    pub const New_York = createDst("America/New_York", -300, DstMarchAt2ToNovAt2);
     pub const Nipigon = create("America/Nipigon", -300);
     pub const Nome = create("America/Nome", -540);
     pub const Noronha = create("America/Noronha", -120);
     pub const North_Dakota = struct {
-        pub const Beulah = create("America/North_Dakota/Beulah", -360);
-        pub const Center = create("America/North_Dakota/Center", -360);
-        pub const New_Salem = create("America/North_Dakota/New_Salem", -360);
+        pub const Beulah = createDst("America/North_Dakota/Beulah", -360, DstMarchAt2ToNovAt2);
+        pub const Center = createDst("America/North_Dakota/Center", -360, DstMarchAt2ToNovAt2);
+        pub const New_Salem = createDst("America/North_Dakota/New_Salem", -360, DstMarchAt2ToNovAt2);
     };
     pub const Ojinaga = create("America/Ojinaga", -420);
     pub const Panama = create("America/Panama", -300);
@@ -367,7 +399,7 @@ pub const Asia = struct {
 
 pub const Atlantic = struct {
     pub const Azores = create("Atlantic/Azores", -60);
-    pub const Bermuda = create("Atlantic/Bermuda", -240);
+    pub const Bermuda = createDst("Atlantic/Bermuda", -240, DstMarchAt2ToNovAt2);
     pub const Canary = create("Atlantic/Canary", 0);
     pub const Cape_Verde = create("Atlantic/Cape_Verde", -60);
     pub const Faeroe = create("Atlantic/Faeroe", 0);
@@ -573,9 +605,9 @@ pub const Libya = create("Libya", 120);
 pub const MET = create("MET", 60);
 
 pub const Mexico = struct {
-    pub const BajaNorte = create("Mexico/BajaNorte", -480);
-    pub const BajaSur = create("Mexico/BajaSur", -420);
-    pub const General = create("Mexico/General", -360);
+    pub const BajaNorte = createDst("Mexico/BajaNorte", -480, DstMarchAt2ToNovAt2);
+    pub const BajaSur = createDst("Mexico/BajaSur", -420, DstMarchAt2ToNovAt2);
+    pub const General = createDst("Mexico/General", -360, DstMarchAt2ToNovAt2);
 };
 pub const MST = create("MST", -420);
 pub const MST7MDT = create("MST7MDT", -420);
@@ -640,18 +672,17 @@ pub const UCT = create("UCT", 0);
 pub const Universal = create("Universal", 0);
 
 pub const US = struct {
-    pub const Alaska = create("US/Alaska", -540);
-    pub const Aleutian = create("US/Aleutian", -600);
+    pub const Alaska = createDst("US/Alaska", -540, DstMarchAt2ToNovAt2);
+    pub const Aleutian = createDst("US/Aleutian", -600, DstMarchAt2ToNovAt2);
     pub const Arizona = create("US/Arizona", -420);
-    pub const Central = create("US/Central", -360);
-    pub const Eastern = create("US/Eastern", -300);
-    pub const East_Indiana = create("US/East-Indiana", -300);
+    pub const Central = createDst("US/Central", -360, DstMarchAt2ToNovAt2);
+    pub const Eastern = createDst("US/Eastern", -300, DstMarchAt2ToNovAt2);
+    pub const East_Indiana = createDst("US/East-Indiana", -300, DstMarchAt2ToNovAt2);
     pub const Hawaii = create("US/Hawaii", -600);
-    pub const Indiana_Starke = create("US/Indiana-Starke", -360);
-    pub const Michigan = create("US/Michigan", -300);
-    pub const Mountain = create("US/Mountain", -420);
-    pub const Pacific = create("US/Pacific", -480);
-    pub const Pacific_New = create("US/Pacific-New", -480);
+    pub const Indiana_Starke = createDst("US/Indiana-Starke", -360, DstMarchAt2ToNovAt2);
+    pub const Michigan = createDst("US/Michigan", -300, DstMarchAt2ToNovAt2);
+    pub const Mountain = createDst("US/Mountain", -420, DstMarchAt2ToNovAt2);
+    pub const Pacific = createDst("US/Pacific", -480, DstMarchAt2ToNovAt2);
     pub const Samoa = create("US/Samoa", -660);
 };
 pub const UTC = create("UTC", 0);
@@ -667,8 +698,7 @@ fn findWithinTimezones(comptime Type: type, timezone: []const u8) ?Timezone {
         }
 
         if (@TypeOf(it) == type) {
-            const Info = @typeInfo(it);
-            if (@hasDecl(@TypeOf(Info), "Struct")) {
+            if (@typeInfo(it) == .@"struct") {
                 const found = findWithinTimezones(it, timezone);
                 if (found != null)
                     return found;
