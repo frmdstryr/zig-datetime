@@ -816,7 +816,10 @@ pub const Timezone = struct {
         if (!dst) return offset;
 
         const now_in_seconds = std.time.timestamp();
-        if (now_in_seconds >= dst_start and now_in_seconds < dst_end) return offset + shift;
+        if (now_in_seconds >= dst_start) {
+            if (dst_start < dst_end and now_in_seconds < dst_end) return offset + shift;
+            if (dst_start > dst_end) return offset + shift; //some regions has start in october and end in march
+        }
 
         return offset;
     }
