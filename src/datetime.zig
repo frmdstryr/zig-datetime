@@ -13,6 +13,7 @@ const Allocator = std.mem.Allocator;
 const Order = std.math.Order;
 
 pub const timezones = @import("timezones.zig");
+pub const dst_factory = @import("dst_factory.zig");
 
 const testing = std.testing;
 const assert = std.debug.assert;
@@ -798,13 +799,25 @@ pub const Timezone = struct {
     name: []const u8,
 
     // Auto register timezones
-    pub fn create(name: []const u8, offset: i16) Timezone {
-        const self = Timezone{ .offset = offset, .name = name };
+    pub fn create(name: []const u8, offset: i16, dst: bool, dstSettting: @Type(.enum_literal)) Timezone {
+        const dst_data = dst_factory.getDstZoneData(dstSettting); //TODO get start, end and shift from a function
+
+        const dstOffset = getDSTOffset(offset, dst, dst_data[0], dst_data[1], dst_data[2]);
+        const self = Timezone{ .offset = dstOffset, .name = name };
         return self;
     }
 
     pub fn offsetSeconds(self: Timezone) i32 {
         return @as(i32, self.offset) * time.s_per_min;
+    }
+
+    fn getDSTOffset(offset: i16, dst: bool, dst_start: u16, dst_end: u16, shift: u16) i16 {
+        if (!dst) return offset;
+
+        const now_in_seconds = std.time.timestamp();
+        if (now_in_seconds >= dst_start and now_in_seconds < dst_end) return offset + shift;
+
+        return offset;
     }
 };
 
@@ -1287,9 +1300,9 @@ pub const Datetime = struct {
     pub fn shiftTimezone(self: Datetime, zone: *const Timezone) Datetime {
         var dt =
             if (self.zone.offset == zone.offset)
-            (self.copy() catch unreachable)
-        else
-            self.shiftMinutes(zone.offset - self.zone.offset);
+                (self.copy() catch unreachable)
+            else
+                self.shiftMinutes(zone.offset - self.zone.offset);
         dt.zone = zone;
         return dt;
     }
@@ -1613,7 +1626,7 @@ test "datetime-subtract" {
 }
 
 test "datetime-subtract-timezone" {
-    var a = try Datetime.create(2024, 7, 10, 23, 35, 0, 0, &Timezone.create("+0400", 4 * 60));
+    var a = try Datetime.create(2024, 7, 10, 23, 35, 0, 0, &Timezone.create("+0400", 4 * 60, false, 0, 0));
     var b = try Datetime.create(2024, 7, 10, 19, 34, 0, 0, null);
     var delta = a.sub(b);
     try testing.expectEqual(delta.days, 0);
