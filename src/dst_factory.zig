@@ -1,4 +1,5 @@
 const std = @import("std");
+const time = std.time;
 
 pub fn getDstZoneData(dstSettting: @Type(.enum_literal)) [3]i64 {
     const year = 2025; //TODO I should calculate the current year and pass it to the function
@@ -24,6 +25,9 @@ pub fn getDstZoneData(dstSettting: @Type(.enum_literal)) [3]i64 {
         .egypt_dst => {
             return getEgyptDstData(year);
         },
+        .israel_dst => {
+            return getIsraelDstData(year);
+        },
         else => {
             return [3]i64{ 0, 0, 0 };
         },
@@ -48,49 +52,65 @@ const Weekdays = enum {
     }
 };
 
+const Occurrence = enum(u8) {
+    first = 1,
+    second,
+    third,
+    fourth,
+    fifth,
+};
+
 pub fn getEuropeDstData(year: u16) [3]i64 {
-    const start = lastWeekdayOfMonth(year, 3, Weekdays.sunday);
-    const end = lastWeekdayOfMonth(year, 10, Weekdays.sunday);
+    const start = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.mar), Weekdays.sunday);
+    const end = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.oct), Weekdays.sunday);
     return [3]i64{ start, end, 60 };
 }
 
 pub fn getUSDstData(year: u16) [3]i64 {
-    const start = nthOccurenceOfTheMonth(year, 3, Weekdays.sunday, 2);
-    const end = nthOccurenceOfTheMonth(year, 11, Weekdays.sunday, 1);
+    const start = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.mar), Weekdays.sunday, Occurrence.second);
+    const end = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.nov), Weekdays.sunday, Occurrence.first);
     return [3]i64{ start, end, 60 };
 }
 
 pub fn getAustraliaDstData(year: u16) [3]i64 {
-    const start = nthOccurenceOfTheMonth(year, 10, Weekdays.sunday, 1);
-    const end = nthOccurenceOfTheMonth(year, 4, Weekdays.sunday, 1);
+    const start = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.oct), Weekdays.sunday, Occurrence.first);
+    const end = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.apr), Weekdays.sunday, Occurrence.first);
     return [3]i64{ start, end, 60 };
 }
 
 pub fn getLordHoweDstData(year: u16) [3]i64 {
-    const start = nthOccurenceOfTheMonth(year, 10, Weekdays.sunday, 1);
-    const end = nthOccurenceOfTheMonth(year, 4, Weekdays.sunday, 1);
+    const start = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.oct), Weekdays.sunday, Occurrence.first);
+    const end = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.apr), Weekdays.sunday, Occurrence.first);
     return [3]i64{ start, end, 30 };
 }
 
 pub fn getNewZelandDstData(year: u16) [3]i64 {
-    const start = lastWeekdayOfMonth(year, 9, Weekdays.sunday);
-    const end = nthOccurenceOfTheMonth(year, 4, Weekdays.sunday, 1);
+    const start = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.sep), Weekdays.sunday);
+    const end = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.apr), Weekdays.sunday, Occurrence.first);
     return [3]i64{ start, end, 60 };
 }
 
 pub fn getChileDstData(year: u16) [3]i64 {
-    const start = nthOccurenceOfTheMonth(year, 9, Weekdays.saturday, 1);
-    const end = nthOccurenceOfTheMonth(year, 4, Weekdays.saturday, 1);
+    const start = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.sep), Weekdays.saturday, Occurrence.first);
+    const end = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.apr), Weekdays.saturday, Occurrence.first);
     return [3]i64{ start, end, 60 };
 }
 
 pub fn getEgyptDstData(year: u16) [3]i64 {
-    const start = lastWeekdayOfMonth(year, 4, Weekdays.friday);
-    const end = lastWeekdayOfMonth(year, 10, Weekdays.thursday);
+    const start = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.apr), Weekdays.friday);
+    const end = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.oct), Weekdays.thursday);
     return [3]i64{ start, end, 60 };
 }
 
-fn nthOccurenceOfTheMonth(year: u32, month: u16, day: Weekdays, occurence: u8) i64 {
+pub fn getIsraelDstData(year: u16) [3]i64 {
+    var start = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.mar), Weekdays.sunday);
+    start -= 2 * 24 * 3600; //Friday before last Sunday in March at 02:00
+    const end = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.oct), Weekdays.sunday);
+    return [3]i64{ start, end, 60 };
+}
+
+fn nthOccurrenceOfTheMonth(year: u32, month: u16, day: Weekdays, occurrence: Occurrence) i64 {
+    const occurrence_as_int = @intFromEnum(occurrence);
     const year_as_seconds = 31536000 * (year - 1970);
     var i: u16 = 1;
     var total_days_passed_in_year: i64 = 0;
@@ -109,7 +129,7 @@ fn nthOccurenceOfTheMonth(year: u32, month: u16, day: Weekdays, occurence: u8) i
         last_day_of_the_month = getDayNameFromTimestamp(leap_added);
     }
 
-    leap_added += (7 * @as(i64, @intCast(occurence))) * 24 * 3600;
+    leap_added += (7 * @as(i64, @intCast(occurrence_as_int))) * 24 * 3600;
 
     return leap_added;
 }
@@ -204,5 +224,12 @@ test "get egypt dst data" {
     const dst_data = getDstZoneData(.egypt_dst);
     try std.testing.expectEqual(1745539200, dst_data[0]);
     try std.testing.expectEqual(1761782400, dst_data[1]);
+    try std.testing.expectEqual(60, dst_data[2]);
+}
+
+test "get israel dst data" {
+    const dst_data = getDstZoneData(.israel_dst);
+    try std.testing.expectEqual(1743120000, dst_data[0]);
+    try std.testing.expectEqual(1761436800, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
