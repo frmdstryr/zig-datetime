@@ -7,7 +7,22 @@ pub fn getDstZoneData(dstSettting: @Type(.enum_literal)) [3]i64 {
             return getEuropeDstData(year);
         },
         .us_dst => {
-            return getCubaDstData(year);
+            return getUSDstData(year);
+        },
+        .australia_dst => {
+            return getAustraliaDstData(year);
+        },
+        .lord_howe_dst => {
+            return getLordHoweDstData(year);
+        },
+        .new_zeland_dst => {
+            return getNewZelandDstData(year);
+        },
+        .chile_dst => {
+            return getChileDstData(year);
+        },
+        .egypt_dst => {
+            return getEgyptDstData(year);
         },
         else => {
             return [3]i64{ 0, 0, 0 };
@@ -39,9 +54,39 @@ pub fn getEuropeDstData(year: u16) [3]i64 {
     return [3]i64{ start, end, 60 };
 }
 
-pub fn getCubaDstData(year: u16) [3]i64 {
+pub fn getUSDstData(year: u16) [3]i64 {
     const start = nthOccurenceOfTheMonth(year, 3, Weekdays.sunday, 2);
     const end = nthOccurenceOfTheMonth(year, 11, Weekdays.sunday, 1);
+    return [3]i64{ start, end, 60 };
+}
+
+pub fn getAustraliaDstData(year: u16) [3]i64 {
+    const start = nthOccurenceOfTheMonth(year, 10, Weekdays.sunday, 1);
+    const end = nthOccurenceOfTheMonth(year, 4, Weekdays.sunday, 1);
+    return [3]i64{ start, end, 60 };
+}
+
+pub fn getLordHoweDstData(year: u16) [3]i64 {
+    const start = nthOccurenceOfTheMonth(year, 10, Weekdays.sunday, 1);
+    const end = nthOccurenceOfTheMonth(year, 4, Weekdays.sunday, 1);
+    return [3]i64{ start, end, 30 };
+}
+
+pub fn getNewZelandDstData(year: u16) [3]i64 {
+    const start = lastWeekdayOfMonth(year, 9, Weekdays.sunday);
+    const end = nthOccurenceOfTheMonth(year, 4, Weekdays.sunday, 1);
+    return [3]i64{ start, end, 60 };
+}
+
+pub fn getChileDstData(year: u16) [3]i64 {
+    const start = nthOccurenceOfTheMonth(year, 9, Weekdays.saturday, 1);
+    const end = nthOccurenceOfTheMonth(year, 4, Weekdays.saturday, 1);
+    return [3]i64{ start, end, 60 };
+}
+
+pub fn getEgyptDstData(year: u16) [3]i64 {
+    const start = lastWeekdayOfMonth(year, 4, Weekdays.friday);
+    const end = lastWeekdayOfMonth(year, 10, Weekdays.thursday);
     return [3]i64{ start, end, 60 };
 }
 
@@ -120,9 +165,44 @@ test "get europe dst data" {
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
-test "get cuba dst data" {
+test "get us dst data" {
     const dst_data = getDstZoneData(.us_dst);
     try std.testing.expectEqual(1741478400, dst_data[0]);
     try std.testing.expectEqual(1762041600, dst_data[1]);
+    try std.testing.expectEqual(60, dst_data[2]);
+}
+
+test "get australia dst data" {
+    const dst_data = getDstZoneData(.australia_dst);
+    try std.testing.expectEqual(1759622400, dst_data[0]);
+    try std.testing.expectEqual(1743897600, dst_data[1]);
+    try std.testing.expectEqual(60, dst_data[2]);
+}
+
+test "get lord howe dst data" {
+    const dst_data = getDstZoneData(.lord_howe_dst);
+    try std.testing.expectEqual(1759622400, dst_data[0]);
+    try std.testing.expectEqual(1743897600, dst_data[1]);
+    try std.testing.expectEqual(30, dst_data[2]);
+}
+
+test "get new zeland dst data" {
+    const dst_data = getDstZoneData(.new_zeland_dst);
+    try std.testing.expectEqual(1759017600, dst_data[0]);
+    try std.testing.expectEqual(1743897600, dst_data[1]);
+    try std.testing.expectEqual(60, dst_data[2]);
+}
+
+test "get chile dst data" {
+    const dst_data = getDstZoneData(.chile_dst);
+    try std.testing.expectEqual(1757116800, dst_data[0]);
+    try std.testing.expectEqual(1743811200, dst_data[1]);
+    try std.testing.expectEqual(60, dst_data[2]);
+}
+
+test "get egypt dst data" {
+    const dst_data = getDstZoneData(.egypt_dst);
+    try std.testing.expectEqual(1745539200, dst_data[0]);
+    try std.testing.expectEqual(1761782400, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
