@@ -6,6 +6,9 @@ pub fn getDstZoneData(dstSettting: @Type(.enum_literal)) [3]i64 {
         .europe_dst => {
             return getEuropeDstData(year);
         },
+        .us_dst => {
+            return getCubaDstData(year);
+        },
         else => {
             return [3]i64{ 0, 0, 0 };
         },
@@ -34,6 +37,36 @@ pub fn getEuropeDstData(year: u16) [3]i64 {
     const start = lastWeekdayOfMonth(year, 3, Weekdays.sunday);
     const end = lastWeekdayOfMonth(year, 10, Weekdays.sunday);
     return [3]i64{ start, end, 60 };
+}
+
+pub fn getCubaDstData(year: u16) [3]i64 {
+    const start = nthOccurenceOfTheMonth(year, 3, Weekdays.sunday, 2);
+    const end = nthOccurenceOfTheMonth(year, 11, Weekdays.sunday, 1);
+    return [3]i64{ start, end, 60 };
+}
+
+fn nthOccurenceOfTheMonth(year: u32, month: u16, day: Weekdays, occurence: u8) i64 {
+    const year_as_seconds = 31536000 * (year - 1970);
+    var i: u16 = 1;
+    var total_days_passed_in_year: i64 = 0;
+    while (i < month) : (i += 1) {
+        total_days_passed_in_year += getDaysInMonth(i, year);
+    }
+
+    const passed_days_in_seconds: i64 = total_days_passed_in_year * 24 * 3600;
+    const total_seconds = year_as_seconds + passed_days_in_seconds;
+    var leap_added = total_seconds + (@divFloor((year - 1970), 4) * 24 * 3600);
+
+    var last_day_of_the_month = getDayNameFromTimestamp(leap_added);
+
+    while (last_day_of_the_month != day) {
+        leap_added -= 24 * 3600;
+        last_day_of_the_month = getDayNameFromTimestamp(leap_added);
+    }
+
+    leap_added += (7 * @as(i64, @intCast(occurence))) * 24 * 3600;
+
+    return leap_added;
 }
 
 fn lastWeekdayOfMonth(year: u32, month: u16, day: Weekdays) i64 {
@@ -84,5 +117,12 @@ test "get europe dst data" {
     const dst_data = getDstZoneData(.europe_dst);
     try std.testing.expectEqual(1743292800, dst_data[0]);
     try std.testing.expectEqual(1761436800, dst_data[1]);
+    try std.testing.expectEqual(60, dst_data[2]);
+}
+
+test "get cuba dst data" {
+    const dst_data = getDstZoneData(.us_dst);
+    try std.testing.expectEqual(1741478400, dst_data[0]);
+    try std.testing.expectEqual(1762041600, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
