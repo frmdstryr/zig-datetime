@@ -801,8 +801,9 @@ pub const Timezone = struct {
     // Auto register timezones
     pub fn create(name: []const u8, offset: i16, dst: bool, dstSettting: @Type(.enum_literal)) Timezone {
         const dst_data = dst_factory.getDstZoneData(dstSettting); //TODO get start, end and shift from a function
+        const shift: i16 = @as(i16, @intCast(dst_data[2]));
 
-        const dstOffset = getDSTOffset(offset, dst, dst_data[0], dst_data[1], dst_data[2]);
+        const dstOffset = getDSTOffset(offset, dst, dst_data[0], dst_data[1], shift);
         const self = Timezone{ .offset = dstOffset, .name = name };
         return self;
     }
@@ -811,7 +812,7 @@ pub const Timezone = struct {
         return @as(i32, self.offset) * time.s_per_min;
     }
 
-    fn getDSTOffset(offset: i16, dst: bool, dst_start: u16, dst_end: u16, shift: u16) i16 {
+    fn getDSTOffset(offset: i16, dst: bool, dst_start: i64, dst_end: i64, shift: i16) i16 {
         if (!dst) return offset;
 
         const now_in_seconds = std.time.timestamp();
@@ -1626,7 +1627,7 @@ test "datetime-subtract" {
 }
 
 test "datetime-subtract-timezone" {
-    var a = try Datetime.create(2024, 7, 10, 23, 35, 0, 0, &Timezone.create("+0400", 4 * 60, false, 0, 0));
+    var a = try Datetime.create(2024, 7, 10, 23, 35, 0, 0, &Timezone.create("+0400", 4 * 60, false, .no_dst));
     var b = try Datetime.create(2024, 7, 10, 19, 34, 0, 0, null);
     var delta = a.sub(b);
     try testing.expectEqual(delta.days, 0);
