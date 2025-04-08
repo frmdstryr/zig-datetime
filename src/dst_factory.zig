@@ -1,31 +1,42 @@
 const std = @import("std");
 const time = std.time;
 
-pub fn getDstZoneData(dstSettting: @Type(.enum_literal)) [3]i64 {
-    const year = 2025; //TODO I should calculate the current year and pass it to the function
-    switch (dstSettting) {
-        .europe_dst => {
+pub const DstZones = enum(u8) {
+    no_dst,
+    europe_dst,
+    us_dst,
+    australia_dst,
+    lord_howe_dst,
+    new_zeland_dst,
+    chile_dst,
+    egypt_dst,
+    israel_dst,
+};
+
+pub fn getDstZoneData(year: u16, dst_zone: DstZones) [3]i64 {
+    switch (dst_zone) {
+        DstZones.europe_dst => {
             return getEuropeDstData(year);
         },
-        .us_dst => {
+        DstZones.us_dst => {
             return getUSDstData(year);
         },
-        .australia_dst => {
+        DstZones.australia_dst => {
             return getAustraliaDstData(year);
         },
-        .lord_howe_dst => {
+        DstZones.lord_howe_dst => {
             return getLordHoweDstData(year);
         },
-        .new_zeland_dst => {
+        DstZones.new_zeland_dst => {
             return getNewZelandDstData(year);
         },
-        .chile_dst => {
+        DstZones.chile_dst => {
             return getChileDstData(year);
         },
-        .egypt_dst => {
+        DstZones.egypt_dst => {
             return getEgyptDstData(year);
         },
-        .israel_dst => {
+        DstZones.israel_dst => {
             return getIsraelDstData(year);
         },
         else => {
@@ -179,56 +190,56 @@ fn isLeapYear(year: u32) bool {
 }
 
 test "get europe dst data" {
-    const dst_data = getDstZoneData(.europe_dst);
+    const dst_data = getDstZoneData(2025, DstZones.europe_dst);
     try std.testing.expectEqual(1743292800, dst_data[0]);
     try std.testing.expectEqual(1761436800, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
 test "get us dst data" {
-    const dst_data = getDstZoneData(.us_dst);
+    const dst_data = getDstZoneData(2025, DstZones.us_dst);
     try std.testing.expectEqual(1741478400, dst_data[0]);
     try std.testing.expectEqual(1762041600, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
 test "get australia dst data" {
-    const dst_data = getDstZoneData(.australia_dst);
+    const dst_data = getDstZoneData(2025, DstZones.australia_dst);
     try std.testing.expectEqual(1759622400, dst_data[0]);
     try std.testing.expectEqual(1743897600, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
 test "get lord howe dst data" {
-    const dst_data = getDstZoneData(.lord_howe_dst);
+    const dst_data = getDstZoneData(2025, DstZones.lord_howe_dst);
     try std.testing.expectEqual(1759622400, dst_data[0]);
     try std.testing.expectEqual(1743897600, dst_data[1]);
     try std.testing.expectEqual(30, dst_data[2]);
 }
 
 test "get new zeland dst data" {
-    const dst_data = getDstZoneData(.new_zeland_dst);
+    const dst_data = getDstZoneData(2025, DstZones.new_zeland_dst);
     try std.testing.expectEqual(1759017600, dst_data[0]);
     try std.testing.expectEqual(1743897600, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
 test "get chile dst data" {
-    const dst_data = getDstZoneData(.chile_dst);
+    const dst_data = getDstZoneData(2025, DstZones.chile_dst);
     try std.testing.expectEqual(1757116800, dst_data[0]);
     try std.testing.expectEqual(1743811200, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
 test "get egypt dst data" {
-    const dst_data = getDstZoneData(.egypt_dst);
+    const dst_data = getDstZoneData(2025, DstZones.egypt_dst);
     try std.testing.expectEqual(1745539200, dst_data[0]);
     try std.testing.expectEqual(1761782400, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
 test "get israel dst data" {
-    const dst_data = getDstZoneData(.israel_dst);
+    const dst_data = getDstZoneData(2025, DstZones.israel_dst);
     try std.testing.expectEqual(1743120000, dst_data[0]);
     try std.testing.expectEqual(1761436800, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);

@@ -11,6 +11,7 @@ const math = std.math;
 const ascii = std.ascii;
 const Allocator = std.mem.Allocator;
 const Order = std.math.Order;
+const DstZones = @import("./dst_factory.zig").DstZones;
 
 pub const timezones = @import("timezones.zig");
 pub const dst_factory = @import("dst_factory.zig");
@@ -797,14 +798,12 @@ test "date-isocalendar" {
 pub const Timezone = struct {
     offset: i16, // In minutes
     name: []const u8,
+    dst: bool,
+    dst_zone: DstZones,
 
     // Auto register timezones
-    pub fn create(name: []const u8, offset: i16, dst: bool, dstSettting: @Type(.enum_literal)) Timezone {
-        const dst_data = dst_factory.getDstZoneData(dstSettting); //TODO get start, end and shift from a function
-        const shift: i16 = @as(i16, @intCast(dst_data[2]));
-
-        const dstOffset = getDSTOffset(offset, dst, dst_data[0], dst_data[1], shift);
-        const self = Timezone{ .offset = dstOffset, .name = name };
+    pub fn create(name: []const u8, offset: i16, dst: bool, dst_zone: DstZones) Timezone {
+        const self = Timezone{ .offset = offset, .name = name, .dst = dst, .dst_zone = dst_zone };
         return self;
     }
 
@@ -812,16 +811,22 @@ pub const Timezone = struct {
         return @as(i32, self.offset) * time.s_per_min;
     }
 
-    fn getDSTOffset(offset: i16, dst: bool, dst_start: i64, dst_end: i64, shift: i16) i16 {
-        if (!dst) return offset;
+    fn setDST(self: *Timezone, date: Datetime) void {
+        if (!self.dst) return;
 
-        const now_in_seconds = std.time.timestamp();
-        if (now_in_seconds >= dst_start) {
-            if (dst_start < dst_end and now_in_seconds < dst_end) return offset + shift;
-            if (dst_start > dst_end) return offset + shift; //some regions has start in october and end in march
+        const dst_data = dst_factory.getDstZoneData(date.date.year, self.dst_zone);
+        const dst_start = dst_data[0];
+        const dst_end = dst_data[1];
+        const shift: i16 = @as(i16, @intCast(dst_data[2]));
+
+        if (date.toTimestamp() >= dst_start) {
+            if (dst_start < dst_end and date.toTimestamp() < dst_end) {
+                self.offset = self.offset + shift;
+            }
+            if (dst_start > dst_end) {
+                self.offset = self.offset + shift; //some regions has start in october and end in march
+            }
         }
-
-        return offset;
     }
 };
 
@@ -1236,8 +1241,10 @@ pub const Datetime = struct {
             return self.cmpSameTimezone(other);
         }
         // Shift both to utc
-        const a = self.shiftTimezone(&timezones.UTC);
-        const b = other.shiftTimezone(&timezones.UTC);
+        var utc_tz_a = timezones.UTC;
+        var utc_tz_b = timezones.UTC;
+        const a = self.shiftTimezone(&utc_tz_a);
+        const b = other.shiftTimezone(&utc_tz_b);
         return a.cmpSameTimezone(b);
     }
 
@@ -1301,7 +1308,8 @@ pub const Datetime = struct {
     }
 
     // Convert to the given timeszone
-    pub fn shiftTimezone(self: Datetime, zone: *const Timezone) Datetime {
+    pub fn shiftTimezone(self: Datetime, zone: *Timezone) Datetime {
+        zone.setDST(self);
         var dt =
             if (self.zone.offset == zone.offset)
                 (self.copy() catch unreachable)
@@ -1520,7 +1528,8 @@ test "datetime-from-seconds" {
 test "datetime-shift-timezones" {
     const ts = 1574908586928;
     const utc = Datetime.fromTimestamp(ts);
-    var t = utc.shiftTimezone(&timezones.America.New_York);
+    var ny_tz = timezones.America.New_York;
+    var t = utc.shiftTimezone(&ny_tz);
 
     try testing.expect(t.date.eql(try Date.create(2019, 11, 27)));
     try testing.expectEqual(t.time.hour, 21);
@@ -1531,11 +1540,13 @@ test "datetime-shift-timezones" {
     try testing.expectEqual(t.toTimestamp(), ts);
 
     // Shifting to same timezone has no effect
-    const same = t.shiftTimezone(&timezones.America.New_York);
+    var ny_tz_same = timezones.America.New_York;
+    const same = t.shiftTimezone(&ny_tz_same);
     try testing.expectEqual(t, same);
 
     // Shift back works
-    const original = t.shiftTimezone(&timezones.UTC);
+    var utc_tz = timezones.UTC;
+    const original = t.shiftTimezone(&utc_tz);
     //std.log.warn("\nutc={}\n", .{utc});
     //std.log.warn("original={}\n", .{original});
     try testing.expect(utc.date.eql(original.date));
@@ -1589,8 +1600,10 @@ test "datetime-shift-seconds" {
             var sec: u8 = 0;
             while (sec < 60) : (sec += 1) {
                 const dt_utc = try Datetime.create(2020, 12, 17, hour, minute, sec, 0, null);
-                const dt_cop = dt_utc.shiftTimezone(&timezones.Europe.Copenhagen);
-                const dt_nyc = dt_utc.shiftTimezone(&timezones.America.New_York);
+                var copenhagen_tz = timezones.Europe.Copenhagen;
+                var ny_tz = timezones.America.New_York;
+                const dt_cop = dt_utc.shiftTimezone(&copenhagen_tz);
+                const dt_nyc = dt_utc.shiftTimezone(&ny_tz);
                 try testing.expect(dt_utc.eql(dt_cop));
                 try testing.expect(dt_utc.eql(dt_nyc));
                 try testing.expect(dt_nyc.eql(dt_cop));
@@ -1610,7 +1623,8 @@ test "datetime-compare" {
     const dt4 = try dt3.copy();
     try testing.expect(dt3.eql(dt4));
 
-    const dt5 = dt1.shiftTimezone(&timezones.America.Louisville);
+    var louisville_tz = timezones.America.Louisville;
+    const dt5 = dt1.shiftTimezone(&louisville_tz);
     try testing.expect(dt5.eql(dt1));
 }
 
@@ -1630,7 +1644,7 @@ test "datetime-subtract" {
 }
 
 test "datetime-subtract-timezone" {
-    var a = try Datetime.create(2024, 7, 10, 23, 35, 0, 0, &Timezone.create("+0400", 4 * 60, false, .no_dst));
+    var a = try Datetime.create(2024, 7, 10, 23, 35, 0, 0, &Timezone.create("+0400", 4 * 60, false, &DstZones.no_dst));
     var b = try Datetime.create(2024, 7, 10, 19, 34, 0, 0, null);
     var delta = a.sub(b);
     try testing.expectEqual(delta.days, 0);
