@@ -811,7 +811,7 @@ pub const Timezone = struct {
         return @as(i32, self.offset) * time.s_per_min;
     }
 
-    fn setDST(self: *Timezone, date: Datetime) void {
+    fn setDST(self: *const Timezone, date: Datetime) void {
         if (!self.dst) return;
 
         const dst_data = dst_factory.getDstZoneData(date.date.year, self.dst_zone);
@@ -827,6 +827,10 @@ pub const Timezone = struct {
                 self.offset = self.offset + shift; //some regions has start in october and end in march
             }
         }
+    }
+
+    pub fn copy(self: *const Timezone) Timezone {
+        return Timezone.create(self.name, self.offset, self.dst, self.dst_zone);
     }
 };
 
@@ -1308,7 +1312,7 @@ pub const Datetime = struct {
     }
 
     // Convert to the given timeszone
-    pub fn shiftTimezone(self: Datetime, zone: *Timezone) Datetime {
+    pub fn shiftTimezone(self: Datetime, zone: *const Timezone) Datetime {
         zone.setDST(self);
         var dt =
             if (self.zone.offset == zone.offset)
@@ -1531,7 +1535,8 @@ test "datetime-shift-timezones" {
     var ny_tz = timezones.America.New_York;
     var t = utc.shiftTimezone(&ny_tz);
 
-    try testing.expect(t.date.eql(try Date.create(2019, 11, 27)));
+    const t_new = try Date.create(2019, 11, 27);
+    try testing.expect(t.date.eql(t_new));
     try testing.expectEqual(t.time.hour, 21);
     try testing.expectEqual(t.time.minute, 36);
     try testing.expectEqual(t.time.second, 26);
@@ -1644,7 +1649,7 @@ test "datetime-subtract" {
 }
 
 test "datetime-subtract-timezone" {
-    var a = try Datetime.create(2024, 7, 10, 23, 35, 0, 0, &Timezone.create("+0400", 4 * 60, false, &DstZones.no_dst));
+    var a = try Datetime.create(2024, 7, 10, 23, 35, 0, 0, &Timezone.create("+0400", 4 * 60, false, DstZones.no_dst));
     var b = try Datetime.create(2024, 7, 10, 19, 34, 0, 0, null);
     var delta = a.sub(b);
     try testing.expectEqual(delta.days, 0);
