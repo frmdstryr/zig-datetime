@@ -811,7 +811,7 @@ pub const Timezone = struct {
         return @as(i32, self.offset) * time.s_per_min;
     }
 
-    fn setDST(self: *const Timezone, date: Datetime) void {
+    fn setDST(self: *Timezone, date: Datetime) void {
         if (!self.dst) return;
 
         const dst_data = dst_factory.getDstZoneData(date.date.year, self.dst_zone);
@@ -821,10 +821,10 @@ pub const Timezone = struct {
 
         if (date.toTimestamp() >= dst_start) {
             if (dst_start < dst_end and date.toTimestamp() < dst_end) {
-                self.offset = self.offset + shift;
+                self.*.offset = self.offset + shift;
             }
             if (dst_start > dst_end) {
-                self.offset = self.offset + shift; //some regions has start in october and end in march
+                self.*.offset = self.offset + shift; //some regions has start in october and end in march
             }
         }
     }
@@ -1313,13 +1313,16 @@ pub const Datetime = struct {
 
     // Convert to the given timeszone
     pub fn shiftTimezone(self: Datetime, zone: *const Timezone) Datetime {
-        zone.setDST(self);
+        const mutable_zone = @as(*Timezone, @constCast(zone));
+        mutable_zone.setDST(self);
+
         var dt =
-            if (self.zone.offset == zone.offset)
+            if (self.zone.offset == mutable_zone.offset)
                 (self.copy() catch unreachable)
             else
-                self.shiftMinutes(zone.offset - self.zone.offset);
-        dt.zone = zone;
+                self.shiftMinutes(mutable_zone.offset - self.zone.offset);
+
+        dt.zone = mutable_zone;
         return dt;
     }
 
@@ -1547,7 +1550,7 @@ test "datetime-shift-timezones" {
     // Shifting to same timezone has no effect
     var ny_tz_same = timezones.America.New_York;
     const same = t.shiftTimezone(&ny_tz_same);
-    try testing.expectEqual(t, same);
+    try testing.expectEqualDeep(t, same);
 
     // Shift back works
     var utc_tz = timezones.UTC;
