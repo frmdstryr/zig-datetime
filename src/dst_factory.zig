@@ -1,5 +1,6 @@
 const std = @import("std");
 const time = std.time;
+const datetime = @import("datetime.zig");
 
 pub const DstZones = enum(u8) {
     no_dst,
@@ -126,7 +127,7 @@ fn nthOccurrenceOfTheMonth(year: u32, month: u16, day: Weekdays, occurrence: Occ
     var i: u16 = 1;
     var total_days_passed_in_year: i64 = 0;
     while (i < month) : (i += 1) {
-        total_days_passed_in_year += getDaysInMonth(i, year);
+        total_days_passed_in_year += datetime.daysInMonth(year, i);
     }
 
     const passed_days_in_seconds: i64 = total_days_passed_in_year * 24 * 3600;
@@ -151,7 +152,7 @@ fn lastWeekdayOfMonth(year: u32, month: u16, day: Weekdays) i64 {
     var i: u16 = 1;
     var total_days_passed_in_year: i64 = 0;
     while (i <= month) : (i += 1) {
-        total_days_passed_in_year += getDaysInMonth(i, year);
+        total_days_passed_in_year += datetime.daysInMonth(year, i);
     }
 
     const passed_days_in_seconds: i64 = total_days_passed_in_year * 24 * 3600;
@@ -168,25 +169,11 @@ fn lastWeekdayOfMonth(year: u32, month: u16, day: Weekdays) i64 {
     return leap_added;
 }
 
-fn getDaysInMonth(month: u16, year: u32) u8 {
-    const days_in_month = [_]u8{ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-
-    if (month == 2 and isLeapYear(year)) {
-        return 29;
-    }
-
-    return days_in_month[month - 1];
-}
-
 fn getDayNameFromTimestamp(timestamp: i64) Weekdays {
     const hours = @divFloor(timestamp, 3600);
     const days = @divFloor(hours, 24);
     const offset = @mod(days, 7);
     return Weekdays.fromNumber(offset);
-}
-
-fn isLeapYear(year: u32) bool {
-    return (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0);
 }
 
 test "get europe dst data" {

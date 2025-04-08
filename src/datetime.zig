@@ -798,12 +798,11 @@ test "date-isocalendar" {
 pub const Timezone = struct {
     offset: i16, // In minutes
     name: []const u8,
-    dst: bool,
     dst_zone: DstZones,
 
     // Auto register timezones
-    pub fn create(name: []const u8, offset: i16, dst: bool, dst_zone: DstZones) Timezone {
-        const self = Timezone{ .offset = offset, .name = name, .dst = dst, .dst_zone = dst_zone };
+    pub fn create(name: []const u8, offset: i16, dst_zone: DstZones) Timezone {
+        const self = Timezone{ .offset = offset, .name = name, .dst_zone = dst_zone };
         return self;
     }
 
@@ -812,7 +811,7 @@ pub const Timezone = struct {
     }
 
     fn setDST(self: *Timezone, date: Datetime) void {
-        if (!self.dst) return;
+        if (self.dst_zone == DstZones.no_dst) return;
 
         const dst_data = dst_factory.getDstZoneData(date.date.year, self.dst_zone);
         const dst_start = dst_data[0];
@@ -1652,7 +1651,7 @@ test "datetime-subtract" {
 }
 
 test "datetime-subtract-timezone" {
-    var a = try Datetime.create(2024, 7, 10, 23, 35, 0, 0, &Timezone.create("+0400", 4 * 60, false, DstZones.no_dst));
+    var a = try Datetime.create(2024, 7, 10, 23, 35, 0, 0, &Timezone.create("+0400", 4 * 60, DstZones.no_dst));
     var b = try Datetime.create(2024, 7, 10, 19, 34, 0, 0, null);
     var delta = a.sub(b);
     try testing.expectEqual(delta.days, 0);
