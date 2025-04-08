@@ -368,7 +368,7 @@ pub const Asia = struct {
 
 pub const Atlantic = struct {
     pub const Azores = create("Atlantic/Azores", -60, DstZones.europe_dst);
-    pub const Bermuda = create("Atlantic/Bermuda", -240, DstZones.australia_dst); //TODO
+    pub const Bermuda = create("Atlantic/Bermuda", -240, DstZones.no_dst); //TODO This is not OK need special dst
     pub const Canary = create("Atlantic/Canary", 0, DstZones.europe_dst);
     pub const Cape_Verde = create("Atlantic/Cape_Verde", -60, DstZones.no_dst);
     pub const Faeroe = create("Atlantic/Faeroe", 0, DstZones.no_dst);
@@ -590,7 +590,7 @@ pub const Pacific = struct {
     pub const Bougainville = create("Pacific/Bougainville", 660, DstZones.no_dst);
     pub const Chatham = create("Pacific/Chatham", 765, DstZones.new_zeland_dst);
     pub const Chuuk = create("Pacific/Chuuk", 600, DstZones.no_dst);
-    pub const Easter = create("Pacific/Easter", -360, DstZones.europe_dst); //TODO
+    pub const Easter = create("Pacific/Easter", -360, DstZones.no_dst); //TODO This is not OK need special dst
     pub const Efate = create("Pacific/Efate", 660, DstZones.no_dst);
     pub const Enderbury = create("Pacific/Enderbury", 780, DstZones.no_dst);
     pub const Fakaofo = create("Pacific/Fakaofo", 780, DstZones.no_dst);

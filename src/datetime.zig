@@ -820,7 +820,6 @@ pub const Timezone = struct {
         const timestamp: i128 = @intFromFloat(date.toSeconds());
 
         if (timestamp >= dst_start) {
-            // std.debug.print("\n===1=== {d} - {d} - {d}\n", .{ timestamp, dst_start, dst_end });
             if (dst_start < dst_end and timestamp < dst_end) {
                 self.*.offset = self.offset + shift;
             }
