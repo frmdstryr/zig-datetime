@@ -176,56 +176,56 @@ fn getDayNameFromTimestamp(timestamp: i64) Weekdays {
     return Weekdays.fromNumber(offset);
 }
 
-test "get europe dst data" {
+test "get-europe-dst-data" {
     const dst_data = getDstZoneData(2025, DstZones.europe_dst);
     try std.testing.expectEqual(1743292800, dst_data[0]);
     try std.testing.expectEqual(1761436800, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
-test "get us dst data" {
+test "get-us-dst-data" {
     const dst_data = getDstZoneData(2025, DstZones.us_dst);
     try std.testing.expectEqual(1741478400, dst_data[0]);
     try std.testing.expectEqual(1762041600, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
-test "get australia dst data" {
+test "get-australia-dst-data" {
     const dst_data = getDstZoneData(2025, DstZones.australia_dst);
     try std.testing.expectEqual(1759622400, dst_data[0]);
     try std.testing.expectEqual(1743897600, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
-test "get lord howe dst data" {
+test "get-lord-howe-dst-data" {
     const dst_data = getDstZoneData(2025, DstZones.lord_howe_dst);
     try std.testing.expectEqual(1759622400, dst_data[0]);
     try std.testing.expectEqual(1743897600, dst_data[1]);
     try std.testing.expectEqual(30, dst_data[2]);
 }
 
-test "get new zeland dst data" {
+test "get-new-zeland-dst-data" {
     const dst_data = getDstZoneData(2025, DstZones.new_zeland_dst);
     try std.testing.expectEqual(1759017600, dst_data[0]);
     try std.testing.expectEqual(1743897600, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
-test "get chile dst data" {
+test "get-chile-dst-data" {
     const dst_data = getDstZoneData(2025, DstZones.chile_dst);
     try std.testing.expectEqual(1757116800, dst_data[0]);
     try std.testing.expectEqual(1743811200, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
-test "get egypt dst data" {
+test "get-egypt-dst-data" {
     const dst_data = getDstZoneData(2025, DstZones.egypt_dst);
     try std.testing.expectEqual(1745539200, dst_data[0]);
     try std.testing.expectEqual(1761782400, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
-test "get israel dst data" {
+test "get-israel-dst-data" {
     const dst_data = getDstZoneData(2025, DstZones.israel_dst);
     try std.testing.expectEqual(1743120000, dst_data[0]);
     try std.testing.expectEqual(1761436800, dst_data[1]);
