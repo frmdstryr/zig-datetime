@@ -1082,7 +1082,7 @@ test "time-write-iso-hms" {
 pub const Datetime = struct {
     date: Date,
     time: Time,
-    zone: *const Timezone,
+    zone: Timezone,
 
     // An absolute or relative delta
     // if years is defined a date is date
@@ -1160,11 +1160,11 @@ pub const Datetime = struct {
         return Datetime.fromTimestamp(time.milliTimestamp());
     }
 
-    pub fn create(year: u32, month: u32, day: u32, hour: u32, minute: u32, second: u32, nanosecond: u32, zone: ?*const Timezone) !Datetime {
+    pub fn create(year: u32, month: u32, day: u32, hour: u32, minute: u32, second: u32, nanosecond: u32, zone: ?Timezone) !Datetime {
         return Datetime{
             .date = try Date.create(year, month, day),
             .time = try Time.create(hour, minute, second, nanosecond),
-            .zone = zone orelse &timezones.UTC,
+            .zone = zone orelse timezones.UTC,
         };
     }
 
@@ -1181,7 +1181,7 @@ pub const Datetime = struct {
         return Datetime{
             .date = try Date.create(year, month, day),
             .time = try Time.create(0, 0, 0, 0),
-            .zone = &timezones.UTC,
+            .zone = timezones.UTC,
         };
     }
 
@@ -1190,7 +1190,7 @@ pub const Datetime = struct {
         return Datetime{
             .date = Date.fromSeconds(seconds),
             .time = Time.fromSeconds(seconds),
-            .zone = &timezones.UTC,
+            .zone = timezones.UTC,
         };
     }
 
@@ -1208,7 +1208,7 @@ pub const Datetime = struct {
         return Datetime{
             .date = Date.fromOrdinal(@intCast(days)),
             .time = Time.fromTimestamp(timestamp - @as(i64, @intCast(d)) * time.ns_per_day),
-            .zone = &timezones.UTC,
+            .zone = timezones.UTC,
         };
     }
 
@@ -1244,11 +1244,9 @@ pub const Datetime = struct {
         if (self.zone.offset == other.zone.offset) {
             return self.cmpSameTimezone(other);
         }
-        // Shift both to utc
-        var utc_tz_a = timezones.UTC;
-        var utc_tz_b = timezones.UTC;
-        const a = self.shiftTimezone(&utc_tz_a);
-        const b = other.shiftTimezone(&utc_tz_b);
+        // Shift both to utc;;
+        const a = self.shiftTimezone(timezones.UTC);
+        const b = other.shiftTimezone(timezones.UTC);
         return a.cmpSameTimezone(b);
     }
 
@@ -1312,17 +1310,16 @@ pub const Datetime = struct {
     }
 
     // Convert to the given timeszone
-    pub fn shiftTimezone(self: Datetime, zone: *const Timezone) Datetime {
+    pub fn shiftTimezone(self: Datetime, zone: Timezone) Datetime {
         var mutable_zone = zone.copy();
         mutable_zone.setDST(self);
-
         var dt =
             if (self.zone.offset == mutable_zone.offset)
                 (self.copy() catch unreachable)
             else
                 self.shiftMinutes(mutable_zone.offset - self.zone.offset);
 
-        dt.zone = &mutable_zone;
+        dt.zone = mutable_zone;
         return dt;
     }
 
@@ -1503,7 +1500,7 @@ pub const Datetime = struct {
         const hour = std.fmt.parseInt(u8, value[17..19], 10) catch return error.InvalidFormat;
         const minute = std.fmt.parseInt(u8, value[20..22], 10) catch return error.InvalidFormat;
         const second = std.fmt.parseInt(u8, value[23..25], 10) catch return error.InvalidFormat;
-        return Datetime.create(year, month, day, hour, minute, second, 0, &timezones.GMT);
+        return Datetime.create(year, month, day, hour, minute, second, 0, timezones.GMT);
     }
 };
 
@@ -1535,8 +1532,7 @@ test "datetime-from-seconds" {
 test "datetime-shift-timezones" {
     const ts = 1574908586928;
     const utc = Datetime.fromTimestamp(ts);
-    var ny_tz = timezones.America.New_York;
-    var t = utc.shiftTimezone(&ny_tz);
+    var t = utc.shiftTimezone(timezones.America.New_York);
 
     const t_new = try Date.create(2019, 11, 27);
     try testing.expect(t.date.eql(t_new));
@@ -1548,13 +1544,11 @@ test "datetime-shift-timezones" {
     try testing.expectEqual(t.toTimestamp(), ts);
 
     // Shifting to same timezone has no effect
-    var ny_tz_same = timezones.America.New_York;
-    const same = t.shiftTimezone(&ny_tz_same);
+    const same = t.shiftTimezone(timezones.America.New_York);
     try testing.expectEqualDeep(t, same);
 
     // Shift back works
-    var utc_tz = timezones.UTC;
-    const original = t.shiftTimezone(&utc_tz);
+    const original = t.shiftTimezone(timezones.UTC);
     //std.log.warn("\nutc={}\n", .{utc});
     //std.log.warn("original={}\n", .{original});
     try testing.expect(utc.date.eql(original.date));
@@ -1597,7 +1591,7 @@ test "datetime-shift" {
 test "datetime-shift-seconds" {
     // Issue 1
     const midnight_utc = try Datetime.create(2020, 12, 17, 0, 0, 0, 0, null);
-    const midnight_copenhagen = try Datetime.create(2020, 12, 17, 1, 0, 0, 0, &timezones.Europe.Copenhagen);
+    const midnight_copenhagen = try Datetime.create(2020, 12, 17, 1, 0, 0, 0, timezones.Europe.Copenhagen);
     try testing.expect(midnight_utc.eql(midnight_copenhagen));
 
     // Check rollover issues
@@ -1608,10 +1602,8 @@ test "datetime-shift-seconds" {
             var sec: u8 = 0;
             while (sec < 60) : (sec += 1) {
                 const dt_utc = try Datetime.create(2020, 12, 17, hour, minute, sec, 0, null);
-                var copenhagen_tz = timezones.Europe.Copenhagen;
-                var ny_tz = timezones.America.New_York;
-                const dt_cop = dt_utc.shiftTimezone(&copenhagen_tz);
-                const dt_nyc = dt_utc.shiftTimezone(&ny_tz);
+                const dt_cop = dt_utc.shiftTimezone(timezones.Europe.Copenhagen);
+                const dt_nyc = dt_utc.shiftTimezone(timezones.America.New_York);
                 try testing.expect(dt_utc.eql(dt_cop));
                 try testing.expect(dt_utc.eql(dt_nyc));
                 try testing.expect(dt_nyc.eql(dt_cop));
@@ -1631,8 +1623,7 @@ test "datetime-compare" {
     const dt4 = try dt3.copy();
     try testing.expect(dt3.eql(dt4));
 
-    var louisville_tz = timezones.America.Louisville;
-    const dt5 = dt1.shiftTimezone(&louisville_tz);
+    const dt5 = dt1.shiftTimezone(timezones.America.Louisville);
     try testing.expect(dt5.eql(dt1));
 }
 
@@ -1652,7 +1643,7 @@ test "datetime-subtract" {
 }
 
 test "datetime-subtract-timezone" {
-    var a = try Datetime.create(2024, 7, 10, 23, 35, 0, 0, &Timezone.create("+0400", 4 * 60, DstZones.no_dst));
+    var a = try Datetime.create(2024, 7, 10, 23, 35, 0, 0, Timezone.create("+0400", 4 * 60, DstZones.no_dst));
     var b = try Datetime.create(2024, 7, 10, 19, 34, 0, 0, null);
     var delta = a.sub(b);
     try testing.expectEqual(delta.days, 0);
@@ -1682,7 +1673,7 @@ test "datetime-subtract-delta" {
 
 test "datetime-parse-modified-since" {
     const str = " Wed, 21 Oct 2015 07:28:00 GMT ";
-    try testing.expectEqual(try Datetime.parseModifiedSince(str), try Datetime.create(2015, 10, 21, 7, 28, 0, 0, &timezones.GMT));
+    try testing.expectEqual(try Datetime.parseModifiedSince(str), try Datetime.create(2015, 10, 21, 7, 28, 0, 0, timezones.GMT));
 
     try testing.expectError(error.InvalidFormat, Datetime.parseModifiedSince("21/10/2015"));
 }
@@ -1721,41 +1712,41 @@ test "datetime-format-ISO8601" {
     allocator.free(dt_str);
 
     // test positive tz
-    dt = try Datetime.create(2023, 6, 10, 18, 12, 52, 49612000, &timezones.Japan);
+    dt = try Datetime.create(2023, 6, 10, 18, 12, 52, 49612000, timezones.Japan);
     dt_str = try dt.formatISO8601(allocator, false);
     try testing.expectEqualStrings("2023-06-10T18:12:52+09:00", dt_str);
     allocator.free(dt_str);
 
     // test negative tz
-    dt = try Datetime.create(2023, 6, 10, 6, 12, 52, 49612000, &timezones.Atlantic.Stanley);
+    dt = try Datetime.create(2023, 6, 10, 6, 12, 52, 49612000, timezones.Atlantic.Stanley);
     dt_str = try dt.formatISO8601(allocator, false);
     try testing.expectEqualStrings("2023-06-10T06:12:52-03:00", dt_str);
     allocator.free(dt_str);
 
     // test tz offset div and mod
-    dt = try Datetime.create(2023, 6, 10, 22, 57, 52, 49612000, &timezones.Pacific.Chatham);
+    dt = try Datetime.create(2023, 6, 10, 22, 57, 52, 49612000, timezones.Pacific.Chatham);
     dt_str = try dt.formatISO8601(allocator, false);
     try testing.expectEqualStrings("2023-06-10T22:57:52+12:45", dt_str);
     allocator.free(dt_str);
 
     // test microseconds
-    dt = try Datetime.create(2023, 6, 10, 5, 57, 52, 49612000, &timezones.America.Aruba);
+    dt = try Datetime.create(2023, 6, 10, 5, 57, 52, 49612000, timezones.America.Aruba);
     dt_str = try dt.formatISO8601(allocator, true);
     try testing.expectEqualStrings("2023-06-10T05:57:52.049612-04:00", dt_str);
     allocator.free(dt_str);
 
     // test format buf
     var buf: [64]u8 = undefined;
-    dt = try Datetime.create(2023, 6, 10, 14, 6, 40, 15006000, &timezones.Hongkong);
+    dt = try Datetime.create(2023, 6, 10, 14, 6, 40, 15006000, timezones.Hongkong);
     dt_str = try dt.formatISO8601Buf(&buf, true);
     try testing.expectEqualStrings("2023-06-10T14:06:40.015006+08:00", dt_str);
 }
 
 test "dst-in-different-years" {
-    const dt1 = try Datetime.create(2025, 6, 10, 18, 12, 52, 49612000, &timezones.UTC);
-    const new_dt1 = dt1.shiftTimezone(&timezones.Europe.Amsterdam);
-    const dt2 = try Datetime.create(1980, 6, 10, 18, 12, 52, 49612000, &timezones.UTC);
-    const new_dt2 = dt2.shiftTimezone(&timezones.Europe.Amsterdam);
+    const dt1 = try Datetime.create(2025, 6, 10, 18, 12, 52, 49612000, timezones.UTC);
+    const new_dt1 = dt1.shiftTimezone(timezones.Europe.Amsterdam);
+    const dt2 = try Datetime.create(1980, 6, 10, 18, 12, 52, 49612000, timezones.UTC);
+    const new_dt2 = dt2.shiftTimezone(timezones.Europe.Amsterdam);
 
     try testing.expectEqual(new_dt1.time.hour, new_dt2.time.hour);
     try testing.expectEqual(new_dt1.time.minute, new_dt2.time.minute);
@@ -1763,10 +1754,10 @@ test "dst-in-different-years" {
 }
 
 test "dst-in-different-years-and-months" {
-    const dt1 = try Datetime.create(2013, 6, 10, 18, 12, 52, 49612000, &timezones.UTC);
-    const new_dt1 = dt1.shiftTimezone(&timezones.Europe.Amsterdam);
-    const dt2 = try Datetime.create(1990, 2, 10, 18, 12, 52, 49612000, &timezones.UTC);
-    const new_dt2 = dt2.shiftTimezone(&timezones.Europe.Amsterdam);
+    const dt1 = try Datetime.create(2013, 6, 10, 18, 12, 52, 49612000, timezones.UTC);
+    const new_dt1 = dt1.shiftTimezone(timezones.Europe.Amsterdam);
+    const dt2 = try Datetime.create(1990, 2, 10, 18, 12, 52, 49612000, timezones.UTC);
+    const new_dt2 = dt2.shiftTimezone(timezones.Europe.Amsterdam);
 
     try testing.expectEqual(new_dt1.time.hour, new_dt2.time.hour + 1); // there will be dst active/passive difference
     try testing.expectEqual(new_dt1.time.minute, new_dt2.time.minute);
