@@ -4,44 +4,44 @@ const datetime = @import("datetime.zig");
 
 pub const DstZones = enum(u8) {
     no_dst,
-    eest,
-    adt,
-    acdt,
-    lhst,
-    nzdt,
-    clst,
-    egypt_dst,
-    idt,
-    easst,
+    eastern_european_summer_time,
+    atlantic_daylight_time,
+    australian_central_daylight_time,
+    lord_howe_summer_time,
+    new_zealand_daylight_time,
+    chile_summer_time,
+    egypt_daylight_time,
+    isreal_daylight_time,
+    eastern_island_summer_time,
 };
 
 pub fn getDstZoneData(year: u16, dst_zone: DstZones) [3]i64 {
     switch (dst_zone) {
-        .eest => {
+        .eastern_european_summer_time => {
             return getEESTData(year);
         },
-        .adt => {
+        .atlantic_daylight_time => {
             return getADTData(year);
         },
-        .acdt => {
+        .australian_central_daylight_time => {
             return getACDTData(year);
         },
-        .lhst => {
+        .lord_howe_summer_time => {
             return getLHSTData(year);
         },
-        .nzdt => {
+        .new_zealand_daylight_time => {
             return getNZDTData(year);
         },
-        .clst => {
+        .chile_summer_time => {
             return getCLSTData(year);
         },
-        .egypt_dst => {
+        .egypt_daylight_time => {
             return getEgyptDstData(year);
         },
-        .idt => {
+        .isreal_daylight_time => {
             return getIDTData(year);
         },
-        .easst => {
+        .eastern_island_summer_time => {
             return getEASSTData(year);
         },
         else => {
@@ -95,8 +95,8 @@ pub fn getACDTData(year: u16) [3]i64 {
 }
 
 pub fn getEASSTData(year: u16) [3]i64 {
-    const start = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.apr), .saturday, .first);
-    const end = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.oct), .saturday, .first);
+    const start = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.sep), .saturday, .first);
+    const end = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.apr), .saturday, .first);
     return [3]i64{ start, end, 60 };
 }
 
@@ -187,57 +187,64 @@ fn getDayNameFromTimestamp(timestamp: i64) Weekdays {
 }
 
 test "get-europe-dst-data" {
-    const dst_data = getDstZoneData(2025, .eest);
+    const dst_data = getDstZoneData(2025, .eastern_european_summer_time);
     try std.testing.expectEqual(1743292800, dst_data[0]);
     try std.testing.expectEqual(1761436800, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
 test "get-us-dst-data" {
-    const dst_data = getDstZoneData(2025, .adt);
+    const dst_data = getDstZoneData(2025, .atlantic_daylight_time);
     try std.testing.expectEqual(1741478400, dst_data[0]);
     try std.testing.expectEqual(1762041600, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
 test "get-australia-dst-data" {
-    const dst_data = getDstZoneData(2025, .acdt);
+    const dst_data = getDstZoneData(2025, .australian_central_daylight_time);
     try std.testing.expectEqual(1759622400, dst_data[0]);
     try std.testing.expectEqual(1743897600, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
 test "get-lord-howe-dst-data" {
-    const dst_data = getDstZoneData(2025, .lhst);
+    const dst_data = getDstZoneData(2025, .lord_howe_summer_time);
     try std.testing.expectEqual(1759622400, dst_data[0]);
     try std.testing.expectEqual(1743897600, dst_data[1]);
     try std.testing.expectEqual(30, dst_data[2]);
 }
 
 test "get-new-zeland-dst-data" {
-    const dst_data = getDstZoneData(2025, .nzdt);
+    const dst_data = getDstZoneData(2025, .new_zealand_daylight_time);
     try std.testing.expectEqual(1759017600, dst_data[0]);
     try std.testing.expectEqual(1743897600, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
 test "get-chile-dst-data" {
-    const dst_data = getDstZoneData(2025, .clst);
+    const dst_data = getDstZoneData(2025, .chile_summer_time);
     try std.testing.expectEqual(1757116800, dst_data[0]);
     try std.testing.expectEqual(1743811200, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
 test "get-egypt-dst-data" {
-    const dst_data = getDstZoneData(2025, .egypt_dst);
+    const dst_data = getDstZoneData(2025, .egypt_daylight_time);
     try std.testing.expectEqual(1745539200, dst_data[0]);
     try std.testing.expectEqual(1761782400, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
 test "get-israel-dst-data" {
-    const dst_data = getDstZoneData(2025, .idt);
+    const dst_data = getDstZoneData(2025, .isreal_daylight_time);
     try std.testing.expectEqual(1743120000, dst_data[0]);
     try std.testing.expectEqual(1761436800, dst_data[1]);
+    try std.testing.expectEqual(60, dst_data[2]);
+}
+
+test "get-eastern-island-dst-data" {
+    const dst_data = getDstZoneData(2025, .eastern_island_summer_time);
+    try std.testing.expectEqual(1743811200, dst_data[0]);
+    try std.testing.expectEqual(1757116800, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
