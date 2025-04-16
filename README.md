@@ -6,8 +6,11 @@
 
 A datetime module for Zig with an api similar to python's Arrow.
 
-> NOTE: This does not implement DST.
+> [!NOTE]
+> DST is now implemeted to the library. Some timezones that relying on islamic calendar for DST might not work yet. It is also possible that we might have skipped some timezones by mistake because there are a lot of timezones.
 
+> [!IMPORTANT]
+> With DST implementation, the `shiftTimezone` method changed and now taking timezone argument passed by value contrary to before that it was passed by pointer.
 
 ```zig
 

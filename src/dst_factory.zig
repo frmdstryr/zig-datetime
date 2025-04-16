@@ -4,41 +4,45 @@ const datetime = @import("datetime.zig");
 
 pub const DstZones = enum(u8) {
     no_dst,
-    europe_dst,
-    us_dst,
-    australia_dst,
-    lord_howe_dst,
-    new_zeland_dst,
-    chile_dst,
+    eest,
+    adt,
+    acdt,
+    lhst,
+    nzdt,
+    clst,
     egypt_dst,
-    israel_dst,
+    idt,
+    easst,
 };
 
 pub fn getDstZoneData(year: u16, dst_zone: DstZones) [3]i64 {
     switch (dst_zone) {
-        .europe_dst => {
-            return getEuropeDstData(year);
+        .eest => {
+            return getEESTData(year);
         },
-        .us_dst => {
-            return getUSDstData(year);
+        .adt => {
+            return getADTData(year);
         },
-        .australia_dst => {
-            return getAustraliaDstData(year);
+        .acdt => {
+            return getACDTData(year);
         },
-        .lord_howe_dst => {
-            return getLordHoweDstData(year);
+        .lhst => {
+            return getLHSTData(year);
         },
-        .new_zeland_dst => {
-            return getNewZelandDstData(year);
+        .nzdt => {
+            return getNZDTData(year);
         },
-        .chile_dst => {
-            return getChileDstData(year);
+        .clst => {
+            return getCLSTData(year);
         },
         .egypt_dst => {
             return getEgyptDstData(year);
         },
-        .israel_dst => {
-            return getIsraelDstData(year);
+        .idt => {
+            return getIDTData(year);
+        },
+        .easst => {
+            return getEASSTData(year);
         },
         else => {
             return [3]i64{ 0, 0, 0 };
@@ -72,52 +76,58 @@ const Occurrence = enum(u8) {
     fifth,
 };
 
-pub fn getEuropeDstData(year: u16) [3]i64 {
-    const start = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.mar), Weekdays.sunday);
-    const end = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.oct), Weekdays.sunday);
+pub fn getEESTData(year: u16) [3]i64 {
+    const start = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.mar), .sunday);
+    const end = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.oct), .sunday);
     return [3]i64{ start, end, 60 };
 }
 
-pub fn getUSDstData(year: u16) [3]i64 {
-    const start = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.mar), Weekdays.sunday, Occurrence.second);
-    const end = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.nov), Weekdays.sunday, Occurrence.first);
+pub fn getADTData(year: u16) [3]i64 {
+    const start = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.mar), .sunday, .second);
+    const end = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.nov), .sunday, .first);
     return [3]i64{ start, end, 60 };
 }
 
-pub fn getAustraliaDstData(year: u16) [3]i64 {
-    const start = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.oct), Weekdays.sunday, Occurrence.first);
-    const end = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.apr), Weekdays.sunday, Occurrence.first);
+pub fn getACDTData(year: u16) [3]i64 {
+    const start = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.oct), .sunday, .first);
+    const end = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.apr), .sunday, .first);
     return [3]i64{ start, end, 60 };
 }
 
-pub fn getLordHoweDstData(year: u16) [3]i64 {
-    const start = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.oct), Weekdays.sunday, Occurrence.first);
-    const end = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.apr), Weekdays.sunday, Occurrence.first);
+pub fn getEASSTData(year: u16) [3]i64 {
+    const start = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.apr), .saturday, .first);
+    const end = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.oct), .saturday, .first);
+    return [3]i64{ start, end, 60 };
+}
+
+pub fn getLHSTData(year: u16) [3]i64 {
+    const start = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.oct), .sunday, .first);
+    const end = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.apr), .sunday, .first);
     return [3]i64{ start, end, 30 };
 }
 
-pub fn getNewZelandDstData(year: u16) [3]i64 {
-    const start = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.sep), Weekdays.sunday);
-    const end = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.apr), Weekdays.sunday, Occurrence.first);
+pub fn getNZDTData(year: u16) [3]i64 {
+    const start = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.sep), .sunday);
+    const end = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.apr), .sunday, .first);
     return [3]i64{ start, end, 60 };
 }
 
-pub fn getChileDstData(year: u16) [3]i64 {
-    const start = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.sep), Weekdays.saturday, Occurrence.first);
-    const end = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.apr), Weekdays.saturday, Occurrence.first);
+pub fn getCLSTData(year: u16) [3]i64 {
+    const start = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.sep), .saturday, .first);
+    const end = nthOccurrenceOfTheMonth(year, @intFromEnum(time.epoch.Month.apr), .saturday, .first);
     return [3]i64{ start, end, 60 };
 }
 
 pub fn getEgyptDstData(year: u16) [3]i64 {
-    const start = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.apr), Weekdays.friday);
-    const end = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.oct), Weekdays.thursday);
+    const start = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.apr), .friday);
+    const end = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.oct), .thursday);
     return [3]i64{ start, end, 60 };
 }
 
-pub fn getIsraelDstData(year: u16) [3]i64 {
-    var start = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.mar), Weekdays.sunday);
+pub fn getIDTData(year: u16) [3]i64 {
+    var start = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.mar), .sunday);
     start -= 2 * 24 * 3600; //Friday before last Sunday in March at 02:00
-    const end = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.oct), Weekdays.sunday);
+    const end = lastWeekdayOfMonth(year, @intFromEnum(time.epoch.Month.oct), .sunday);
     return [3]i64{ start, end, 60 };
 }
 
@@ -177,42 +187,42 @@ fn getDayNameFromTimestamp(timestamp: i64) Weekdays {
 }
 
 test "get-europe-dst-data" {
-    const dst_data = getDstZoneData(2025, .europe_dst);
+    const dst_data = getDstZoneData(2025, .eest);
     try std.testing.expectEqual(1743292800, dst_data[0]);
     try std.testing.expectEqual(1761436800, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
 test "get-us-dst-data" {
-    const dst_data = getDstZoneData(2025, .us_dst);
+    const dst_data = getDstZoneData(2025, .adt);
     try std.testing.expectEqual(1741478400, dst_data[0]);
     try std.testing.expectEqual(1762041600, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
 test "get-australia-dst-data" {
-    const dst_data = getDstZoneData(2025, .australia_dst);
+    const dst_data = getDstZoneData(2025, .acdt);
     try std.testing.expectEqual(1759622400, dst_data[0]);
     try std.testing.expectEqual(1743897600, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
 test "get-lord-howe-dst-data" {
-    const dst_data = getDstZoneData(2025, .lord_howe_dst);
+    const dst_data = getDstZoneData(2025, .lhst);
     try std.testing.expectEqual(1759622400, dst_data[0]);
     try std.testing.expectEqual(1743897600, dst_data[1]);
     try std.testing.expectEqual(30, dst_data[2]);
 }
 
 test "get-new-zeland-dst-data" {
-    const dst_data = getDstZoneData(2025, .new_zeland_dst);
+    const dst_data = getDstZoneData(2025, .nzdt);
     try std.testing.expectEqual(1759017600, dst_data[0]);
     try std.testing.expectEqual(1743897600, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
 
 test "get-chile-dst-data" {
-    const dst_data = getDstZoneData(2025, .chile_dst);
+    const dst_data = getDstZoneData(2025, .clst);
     try std.testing.expectEqual(1757116800, dst_data[0]);
     try std.testing.expectEqual(1743811200, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
@@ -226,7 +236,7 @@ test "get-egypt-dst-data" {
 }
 
 test "get-israel-dst-data" {
-    const dst_data = getDstZoneData(2025, .israel_dst);
+    const dst_data = getDstZoneData(2025, .idt);
     try std.testing.expectEqual(1743120000, dst_data[0]);
     try std.testing.expectEqual(1761436800, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
