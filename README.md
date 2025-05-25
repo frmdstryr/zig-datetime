@@ -12,6 +12,27 @@ A datetime module for Zig with an api similar to python's Arrow.
 > [!IMPORTANT]
 > With DST implementation, the `shiftTimezone` method changed and now taking timezone argument passed by value contrary to before that it was passed by pointer.
 
+## Install
+1) Add zig-datetime as a dependency in your `build.zig.zon`:
+
+```bash
+zig fetch --save git+https://github.com/frmdstryr/zig-datetime#master
+```
+
+2) In your `build.zig`, add the `datetime` module as a dependency you your program:
+
+```zig
+const pg = b.dependency("datetime", .{
+    .target = target,
+    .optimize = optimize,
+});
+
+// the executable from your call to exe_mod.addExecutable
+exe.root_module.addImport("datetime", pg.module("datetime"));
+```
+
+## Example
+
 ```zig
 
 const allocator = std.heap.page_allocator;
