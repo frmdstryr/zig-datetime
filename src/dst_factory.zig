@@ -132,28 +132,22 @@ pub fn getIDTData(year: u16) [3]i64 {
 }
 
 fn nthOccurrenceOfTheMonth(year: u32, month: u16, day: Weekdays, occurrence: Occurrence) i64 {
-    const occurrence_as_int = @intFromEnum(occurrence);
-    const year_as_seconds = 31536000 * (year - 1970);
-    var i: u16 = 1;
-    var total_days_passed_in_year: i64 = 0;
-    while (i < month) : (i += 1) {
-        total_days_passed_in_year += datetime.daysInMonth(year, i);
+    var days_since_epoch: i64 = 0;
+
+    for (1970..year) |i| {
+        days_since_epoch += if (datetime.isLeapYear(@intCast(i))) 366 else 365;
     }
 
-    const passed_days_in_seconds: i64 = total_days_passed_in_year * 24 * 3600;
-    const total_seconds = year_as_seconds + passed_days_in_seconds;
-    var leap_added = total_seconds + (@divFloor((year - 1970), 4) * 24 * 3600);
-
-    var last_day_of_the_month = getDayNameFromTimestamp(leap_added);
-
-    while (last_day_of_the_month != day) {
-        leap_added -= 24 * 3600;
-        last_day_of_the_month = getDayNameFromTimestamp(leap_added);
+    for (1..month) |i| {
+        days_since_epoch += datetime.daysInMonth(year, @intCast(i));
     }
 
-    leap_added += (7 * @as(i64, @intCast(occurrence_as_int))) * 24 * 3600;
+    // The first day in the epoch week is Thursday and in the Weekday enum Thursday is at pos 0
+    const first_weekday_in_epoch: i64 = @mod(days_since_epoch, 7);
 
-    return leap_added;
+    const offset: i64 = @mod(@intFromEnum(day) - first_weekday_in_epoch, 7);
+    const first_day_of_month: i64 = 1 + offset + (@intFromEnum(occurrence) - 1) * 7;
+    return (days_since_epoch + first_day_of_month - 1) * 86_400;
 }
 
 fn lastWeekdayOfMonth(year: u32, month: u16, day: Weekdays) i64 {
@@ -246,5 +240,32 @@ test "get-eastern-island-dst-data" {
     const dst_data = getDstZoneData(2025, .eastern_island_summer_time);
     try std.testing.expectEqual(1743811200, dst_data[0]);
     try std.testing.expectEqual(1757116800, dst_data[1]);
+    try std.testing.expectEqual(60, dst_data[2]);
+}
+
+test "get-us-dst-data-2026" {
+    const dst_data = getDstZoneData(2026, .atlantic_daylight_time);
+    //(March 8th 2026)
+    try std.testing.expectEqual(1772928000, dst_data[0]);
+    //(1st November 2026)
+    try std.testing.expectEqual(1793491200, dst_data[1]);
+    try std.testing.expectEqual(60, dst_data[2]);
+}
+
+test "get-us-dst-data-2027" {
+    const dst_data = getDstZoneData(2027, .atlantic_daylight_time);
+    //(March 14th 2027)
+    try std.testing.expectEqual(1804982400, dst_data[0]);
+    //(7st November 2027)
+    try std.testing.expectEqual(1825545600, dst_data[1]);
+    try std.testing.expectEqual(60, dst_data[2]);
+}
+
+test "get-us-dst-data-2028" {
+    const dst_data = getDstZoneData(2028, .atlantic_daylight_time);
+    //(March 12th 2027)
+    try std.testing.expectEqual(1836432000, dst_data[0]);
+    //(7st November 2027)
+    try std.testing.expectEqual(1856995200, dst_data[1]);
     try std.testing.expectEqual(60, dst_data[2]);
 }
